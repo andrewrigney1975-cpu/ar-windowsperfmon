@@ -62,3 +62,7 @@ PLAN.md               Design plan and decisions
 - `--theme light|dark`: force a theme.
 - `--size 1280x860`: set the window size in DIPs.
 - `--redact`: replace the SSID, IP addresses, gateway, DNS and MAC with placeholder values. The screenshots above were made this way.
+
+## License
+
+[MIT](LICENSE) © 2026 Andrew Rigney
