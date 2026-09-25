@@ -91,6 +91,8 @@
     <Manifest Include="$(ApplicationManifest)" />
     <Content Include="Assets\Detective.ico" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Assets\Detective.png" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Ship the license with every publish; .txt so it opens on double-click in Windows. -->
+    <None Include="..\..\LICENSE" Link="LICENSE.txt" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
