@@ -31,13 +31,17 @@ public sealed partial class MainWindow : Window
         InitializeComponent();
         // Set in code rather than x:Bind so the Native AOT marshalling generator sees the collection type.
         StripRepeater.ItemsSource = Shell.Items;
+        // WinUI gives the first control (the ☰ button) programmatic focus at startup, which draws a focus
+        // rectangle. Pointer focus keeps the same focus target without the rectangle until the keyboard is used.
+        RootGrid.Loaded += (_, _) => Nav.Focus(FocusState.Pointer);
 
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
         AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "Assets", "Detective.ico"));
         // Settings hold the size in DIPs so the window opens at the same visual size on any display scale.
         double scale = GetDpiForWindow(WinRT.Interop.WindowNative.GetWindowHandle(this)) / 96.0;
-        AppWindow.Resize(new SizeInt32((int)(_settings.Width * scale), (int)(_settings.Height * scale)));
+        var (width, height) = SnapshotMode.Size ?? (_settings.Width, _settings.Height);
+        AppWindow.Resize(new SizeInt32((int)(width * scale), (int)(height * scale)));
         FitToWorkArea();
         if (AppWindow.Presenter is OverlappedPresenter presenter)
         {

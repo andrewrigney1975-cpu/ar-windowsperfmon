@@ -19,6 +19,23 @@ internal static class SnapshotMode
     /// <summary>Optional "light" or "dark" override so both themes can be checked.</summary>
     public static string? Theme { get; } = Arg("--theme");
 
+    /// <summary>Optional window size in DIPs, e.g. "1280x860", instead of the saved size.</summary>
+    public static (int Width, int Height)? Size { get; } = ParseSize(Arg("--size"));
+
+    /// <summary>
+    /// "--redact": replace identifying network details (SSID, IP addresses, gateway, DNS, MAC) with
+    /// documentation placeholders, for screenshots that will be published.
+    /// </summary>
+    public static bool Redact { get; } = Environment.GetCommandLineArgs().Contains("--redact");
+
+    private static (int, int)? ParseSize(string? value)
+    {
+        var parts = value?.Split('x');
+        return parts is [var w, var h] && int.TryParse(w, out int width) && int.TryParse(h, out int height)
+            ? (width, height)
+            : null;
+    }
+
     private static string? Arg(string name)
     {
         var args = Environment.GetCommandLineArgs();

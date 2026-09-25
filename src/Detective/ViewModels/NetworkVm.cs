@@ -127,8 +127,23 @@ public sealed partial class NetworkVm : FocusItemVm
             ("MAC address", _info?.Mac ?? ""),
             ("Driver", _info is null ? "" : $"{_info.DriverProvider} {_info.DriverVersion}".Trim()),
         };
+        if (SnapshotMode.Redact) rows = Redacted(rows);
         Replace(StaticInfo, rows);
     }
+
+    /// <summary>Placeholder values (RFC 5737 / RFC 3849 documentation ranges) for published screenshots.</summary>
+    private static List<(string, string)> Redacted(List<(string Label, string Value)> rows) =>
+        rows.Select(r => (r.Label, r.Label switch
+        {
+            "SSID" when r.Value != "" => "HomeNetwork",
+            "IPv4 address" when r.Value != "" => "192.0.2.24",
+            "IPv6 address" when r.Value != "" => "2001:db8::24\nfe80::1a2b:3c4d:5e6f:7a8b (link-local)",
+            "Default gateway" when r.Value != "" => "192.0.2.1",
+            "DNS servers" when r.Value != "" => "192.0.2.1\n2001:db8::1",
+            "DNS suffix" when r.Value != "" => "home",
+            "MAC address" when r.Value != "" => "00-00-5E-00-53-24",
+            _ => r.Value,
+        })).ToList();
 
     private static string Join(IReadOnlyList<string>? values) => values is null ? "" : string.Join("\n", values);
 }
