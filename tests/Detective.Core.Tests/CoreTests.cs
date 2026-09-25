@@ -182,3 +182,43 @@ public class FormatTests
         Assert.Equal("1:02:03:04", Format.Uptime(new TimeSpan(1, 2, 3, 4)));
     }
 }
+
+public class SustainedLoadTests
+{
+    private static RingBuffer History(params float[] values)
+    {
+        var rb = new RingBuffer();
+        foreach (var v in values) rb.Add(v);
+        return rb;
+    }
+
+    [Theory]
+    [InlineData(1.0, 5)]
+    [InlineData(0.5, 10)]
+    [InlineData(4.0, 2)]
+    public void FiveSecondsInSamples(double intervalSeconds, int expected) =>
+        Assert.Equal(expected, SustainedLoad.SamplesFor(TimeSpan.FromSeconds(intervalSeconds)));
+
+    [Fact]
+    public void NeedsTheWholeWindowAboveTheThreshold()
+    {
+        Assert.Equal(LoadLevel.Normal, SustainedLoad.Level(History(95, 95, 95, 95), 5));      // only 4 s so far
+        Assert.Equal(LoadLevel.Critical, SustainedLoad.Level(History(95, 95, 95, 95, 95), 5));
+        Assert.Equal(LoadLevel.High, SustainedLoad.Level(History(95, 80, 95, 95, 95), 5));    // one sample 75–90
+        Assert.Equal(LoadLevel.Normal, SustainedLoad.Level(History(95, 95, 70, 95, 95), 5));  // one dip below 75
+    }
+
+    [Fact]
+    public void OnlyTheLatestWindowCounts()
+    {
+        Assert.Equal(LoadLevel.Normal, SustainedLoad.Level(History(99, 99, 99, 99, 99, 10), 5));
+        Assert.Equal(LoadLevel.High, SustainedLoad.Level(History(10, 10, 76, 80, 85, 88, 77), 5));
+    }
+
+    [Fact]
+    public void ThresholdsAreStrictlyAbove()
+    {
+        Assert.Equal(LoadLevel.Normal, SustainedLoad.Level(History(75, 75, 75, 75, 75), 5));
+        Assert.Equal(LoadLevel.High, SustainedLoad.Level(History(90, 90, 90, 90, 90), 5));
+    }
+}

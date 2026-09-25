@@ -24,6 +24,19 @@ public static class Accents
     public static readonly Color Disk = ColorHelper.FromArgb(255, 0x4D, 0xA6, 0x0C);
     public static readonly Color Network = ColorHelper.FromArgb(255, 0xA7, 0x4F, 0x01);
     public static readonly Color Gpu = ColorHelper.FromArgb(255, 0x0B, 0x85, 0x79);
+
+    /// <summary>CPU chart colour after sustained load above 75% (Windows caution orange).</summary>
+    public static readonly Color HighLoad = ColorHelper.FromArgb(255, 0xF7, 0x63, 0x0C);
+
+    /// <summary>CPU chart colour after sustained load above 90% (Windows critical red).</summary>
+    public static readonly Color CriticalLoad = ColorHelper.FromArgb(255, 0xE8, 0x11, 0x23);
+
+    public static Color ForLoad(LoadLevel level, Color normal) => level switch
+    {
+        LoadLevel.Critical => CriticalLoad,
+        LoadLevel.High => HighLoad,
+        _ => normal,
+    };
 }
 
 /// <summary>A label/value pair shown in a details block.</summary>
@@ -59,8 +72,12 @@ public sealed partial class ChartWindow : ObservableObject
     [ObservableProperty]
     private double _detailsMaxHeight = 260;
 
+    /// <summary>Current sampling interval.</summary>
+    public TimeSpan Interval { get; private set; } = TimeSpan.FromSeconds(1);
+
     public void SetInterval(TimeSpan interval)
     {
+        Interval = interval;
         double seconds = interval.TotalSeconds * RingBuffer.DefaultCapacity;
         Caption = seconds < 120 ? $"{seconds:0} seconds" : $"{seconds / 60:0} minutes";
     }
@@ -77,6 +94,7 @@ public abstract partial class FocusItemVm : ObservableObject
         Kind = kind;
         Key = key;
         Accent = accent;
+        _tileAccent = accent;
     }
 
     public FocusKind Kind { get; }
@@ -100,6 +118,10 @@ public abstract partial class FocusItemVm : ObservableObject
 
     [ObservableProperty]
     private double _tileMaximum = 100;
+
+    /// <summary>Colour of the tile's chart; the item's accent unless something (e.g. CPU load) overrides it.</summary>
+    [ObservableProperty]
+    private Color _tileAccent;
 
     [ObservableProperty]
     private string _tileTitle = "";

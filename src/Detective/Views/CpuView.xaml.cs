@@ -12,6 +12,10 @@ public sealed partial class CpuView : UserControl
         Vm = vm;
         InitializeComponent();
         vm.LogicalChanged += (_, _) => BuildLogicalGrid();
+        vm.LogicalAccentChanged += (_, i) =>
+        {
+            if (i < LogicalGrid.Children.Count) ((AreaChart)LogicalGrid.Children[i]).Accent = Vm.LogicalAccents[i];
+        };
         vm.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(CpuVm.ShowLogical)) SyncMode();
@@ -54,7 +58,7 @@ public sealed partial class CpuView : UserControl
         LogicalGrid.Children.Clear();
         for (int i = 0; i < Vm.Logical.Count; i++)
         {
-            var chart = new AreaChart { Primary = Vm.Logical[i], Accent = Vm.Accent };
+            var chart = new AreaChart { Primary = Vm.Logical[i], Accent = Vm.LogicalAccents[i] };
             ToolTipService.SetToolTip(chart, $"Logical processor {i}");
             LogicalGrid.Children.Add(chart);
         }

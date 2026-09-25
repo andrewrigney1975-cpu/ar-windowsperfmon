@@ -145,7 +145,7 @@
                                                 Primary="{x:Bind TileSeries}"
                                                 Secondary="{x:Bind TileSecondary}"
                                                 Maximum="{x:Bind TileMaximum, Mode=OneWay}"
-                                                Accent="{x:Bind Accent}"
+                                                Accent="{x:Bind TileAccent, Mode=OneWay}"
                                                 ShowGrid="False" />
                                             <TextBlock Grid.Row="1" Text="{x:Bind TileTitle, Mode=OneWay}" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
                                             <TextBlock Grid.Row="2" Text="{x:Bind TileSubtitle, Mode=OneWay}" Style="{StaticResource ChartCaptionStyle}" FontSize="11" />

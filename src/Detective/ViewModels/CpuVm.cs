@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using Detective.Core;
+using Windows.UI;
 
 namespace Detective.ViewModels;
 
@@ -17,6 +18,12 @@ public sealed partial class CpuVm : FocusItemVm
     /// <summary>Raised when the logical-processor count first becomes known (or changes).</summary>
     public event EventHandler? LogicalChanged;
 
+    /// <summary>Chart colour per logical processor, following the same sustained-load rule as the overall chart.</summary>
+    public List<Color> LogicalAccents { get; } = new();
+
+    /// <summary>Raised when any logical processor's chart colour changes; the argument is its index.</summary>
+    public event EventHandler<int>? LogicalAccentChanged;
+
     [ObservableProperty]
     private bool _showLogical;
 
@@ -27,11 +34,27 @@ public sealed partial class CpuVm : FocusItemVm
         if (s.PerLogical.Length > 0 && s.PerLogical.Length != Logical.Count)
         {
             Logical.Clear();
-            for (int i = 0; i < s.PerLogical.Length; i++) Logical.Add(new RingBuffer());
+            LogicalAccents.Clear();
+            for (int i = 0; i < s.PerLogical.Length; i++)
+            {
+                Logical.Add(new RingBuffer());
+                LogicalAccents.Add(Accent);
+            }
             LogicalChanged?.Invoke(this, EventArgs.Empty);
         }
         for (int i = 0; i < Logical.Count && i < s.PerLogical.Length; i++)
             Logical[i].Add((float)s.PerLogical[i]);
+
+        // Orange after 5+ s above 75%, red after 5+ s above 90%; back to blue as soon as it drops below.
+        int samples = SustainedLoad.SamplesFor(ChartWindow.Current.Interval);
+        TileAccent = Accents.ForLoad(SustainedLoad.Level(TileSeries, samples), Accent);
+        for (int i = 0; i < Logical.Count; i++)
+        {
+            var color = Accents.ForLoad(SustainedLoad.Level(Logical[i], samples), Accent);
+            if (color == LogicalAccents[i]) continue;
+            LogicalAccents[i] = color;
+            LogicalAccentChanged?.Invoke(this, i);
+        }
 
         string speed = s.SpeedMhz > 0 ? Format.Mhz(s.SpeedMhz) : "—";
         TileSubtitle = $"{Format.Percent(s.Utilization)}  {speed}";
