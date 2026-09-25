@@ -14,12 +14,36 @@ public sealed partial class NetworkVm : FocusItemVm
     private NetworkAddresses? _addresses;
     private int _ticks;
 
-    public NetworkVm(NetworkSample first) : base(FocusKind.Network, first.Id, Accents.Network)
+    public NetworkVm(NetworkSample first, double peakSend = 0, double peakReceive = 0)
+        : base(FocusKind.Network, first.Id, Accents.Network)
     {
         TileSecondary = new RingBuffer();
         Title = first.TypeLabel;
         Subtitle = first.Description;
+        PeakSend = peakSend;
+        PeakReceive = peakReceive;
     }
+
+    /// <summary>Highest send rate ever seen on this adapter (bits/s), restored from settings.</summary>
+    public double PeakSend { get; private set; }
+
+    /// <summary>Highest receive rate ever seen on this adapter (bits/s), restored from settings.</summary>
+    public double PeakReceive { get; private set; }
+
+    /// <summary>Raised when either peak rises or is reset.</summary>
+    public event EventHandler? PeaksChanged;
+
+    public void ResetPeaks()
+    {
+        PeakSend = 0;
+        PeakReceive = 0;
+        Set(LiveStats, "Max send", Format.BitRate(0));
+        Set(LiveStats, "Max receive", Format.BitRate(0));
+        PeaksReset?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>Raised when the user resets the peaks; the saved values should be cleared at once.</summary>
+    public event EventHandler? PeaksReset;
 
     /// <summary>Receive is the filled series, send the dashed one (Task Manager's convention).</summary>
     public RingBuffer Receive => TileSeries;
@@ -46,9 +70,18 @@ public sealed partial class NetworkVm : FocusItemVm
         TileTitle = TypeLabel;
         TileSubtitle = $"S: {Format.BitRate(s.SendBitsPerSec)}  R: {Format.BitRate(s.ReceiveBitsPerSec)}";
 
+        if (s.SendBitsPerSec > PeakSend || s.ReceiveBitsPerSec > PeakReceive)
+        {
+            PeakSend = Math.Max(PeakSend, s.SendBitsPerSec);
+            PeakReceive = Math.Max(PeakReceive, s.ReceiveBitsPerSec);
+            PeaksChanged?.Invoke(this, EventArgs.Empty);
+        }
+
         Set(LiveStats, "Send", Format.BitRate(s.SendBitsPerSec));
         Set(LiveStats, "Receive", Format.BitRate(s.ReceiveBitsPerSec));
         if (s.Wlan is { AccessDenied: false } w) Set(LiveStats, "Signal strength", $"{w.SignalQuality}%");
+        Set(LiveStats, "Max send", Format.BitRate(PeakSend));
+        Set(LiveStats, "Max receive", Format.BitRate(PeakReceive));
 
         if (++_ticks % AddressRefreshTicks == 0) _ = RefreshAddressesAsync();
         else if (wlanChanged) ShowStatic();

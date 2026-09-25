@@ -20,6 +20,9 @@ public sealed class AppSettings
     /// <summary>CPU view shows the per-logical-processor grid instead of overall utilization.</summary>
     public bool CpuShowLogical { get; set; }
 
+    /// <summary>Highest send/receive rates seen per network adapter (interface GUID), in bits per second.</summary>
+    public Dictionary<string, NetworkPeak> NetworkPeaks { get; set; } = new();
+
     /// <summary>GPU engine picked in each of the four charts, keyed by the GPU's persist key.</summary>
     public Dictionary<string, string[]> GpuEngines { get; set; } = new();
 
@@ -64,4 +67,11 @@ public sealed class AppSettings
         catch (IOException) { }
         catch (UnauthorizedAccessException) { }
     }
+}
+
+public sealed class NetworkPeak
+{
+    public double SendBitsPerSec { get; set; }
+
+    public double ReceiveBitsPerSec { get; set; }
 }

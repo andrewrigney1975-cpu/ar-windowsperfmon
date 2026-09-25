@@ -14,6 +14,9 @@ public sealed partial class DetailsPanel : UserControl
         InitializeComponent();
     }
 
+    /// <summary>The right-click menu, so a view can add its own commands next to Copy.</summary>
+    public MenuFlyout Menu => (MenuFlyout)ContextFlyout;
+
     public static readonly DependencyProperty LiveStatsProperty = DependencyProperty.Register(
         nameof(LiveStats), typeof(object), typeof(DetailsPanel),
         new PropertyMetadata(null, (d, e) => ((DetailsPanel)d).LiveRepeater.ItemsSource = e.NewValue));

@@ -6,7 +6,16 @@
     xmlns:c="using:Detective.Controls"
     xmlns:vm="using:Detective.ViewModels">
 
-    <Grid RowSpacing="4">
+    <Grid RowSpacing="4" Background="Transparent">
+        <Grid.ContextFlyout>
+            <MenuFlyout>
+                <MenuFlyoutItem Text="Reset maximum speeds" Click="ResetPeaks_Click">
+                    <MenuFlyoutItem.Icon>
+                        <FontIcon Glyph="&#xE72C;" />
+                    </MenuFlyoutItem.Icon>
+                </MenuFlyoutItem>
+            </MenuFlyout>
+        </Grid.ContextFlyout>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -38,7 +47,7 @@
             <TextBlock Text="0" Style="{StaticResource ChartCaptionStyle}" HorizontalAlignment="Right" />
         </Grid>
 
-        <c:DetailsPanel Grid.Row="4" Margin="0,16,0,0"
+        <c:DetailsPanel x:Name="Details" Grid.Row="4" Margin="0,16,0,0"
             LiveStats="{x:Bind Vm.LiveStats, Mode=OneWay}"
             StaticInfo="{x:Bind Vm.StaticInfo, Mode=OneWay}" />
     </Grid>

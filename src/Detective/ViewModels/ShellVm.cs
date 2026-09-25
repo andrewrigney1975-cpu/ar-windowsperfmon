@@ -94,11 +94,43 @@ public sealed partial class ShellVm : ObservableObject
 
         Reconcile(FocusKind.Disk, snapshot.Disks, d => $"disk:{d.Number}", d => new DiskVm(d.Number), (vm, d) => vm.Apply(d));
         LabelNetworks(snapshot.Networks);
-        Reconcile(FocusKind.Network, snapshot.Networks, n => n.Id, n => new NetworkVm(n), (vm, n) => vm.Apply(n));
+        Reconcile(FocusKind.Network, snapshot.Networks, n => n.Id, CreateNetwork, (vm, n) => vm.Apply(n));
+        SavePeaksIfDue();
         Reconcile(FocusKind.Gpu, snapshot.Gpus, g => g.Adapter.LuidKey, CreateGpu, (vm, g) => vm.Apply(g));
 
         if (!_focusRestored) RestoreFocus();
         ChartClock.Advance();
+    }
+
+    private static readonly TimeSpan PeakSaveInterval = TimeSpan.FromSeconds(10);
+    private readonly System.Diagnostics.Stopwatch _sincePeakSave = System.Diagnostics.Stopwatch.StartNew();
+    private bool _peaksDirty;
+
+    private NetworkVm CreateNetwork(NetworkSample sample)
+    {
+        var saved = _settings.NetworkPeaks.GetValueOrDefault(sample.Id);
+        var vm = new NetworkVm(sample, saved?.SendBitsPerSec ?? 0, saved?.ReceiveBitsPerSec ?? 0);
+        vm.PeaksChanged += (_, _) =>
+        {
+            // Settings are updated in memory at once (so a normal close saves them); the file write is throttled
+            // because peaks climb often while a transfer ramps up.
+            _settings.NetworkPeaks[vm.Key] = new NetworkPeak { SendBitsPerSec = vm.PeakSend, ReceiveBitsPerSec = vm.PeakReceive };
+            _peaksDirty = true;
+        };
+        vm.PeaksReset += (_, _) =>
+        {
+            _settings.NetworkPeaks.Remove(vm.Key);
+            _settings.Save();
+        };
+        return vm;
+    }
+
+    private void SavePeaksIfDue()
+    {
+        if (!_peaksDirty || _sincePeakSave.Elapsed < PeakSaveInterval) return;
+        _peaksDirty = false;
+        _sincePeakSave.Restart();
+        _settings.Save();
     }
 
     private GpuVm CreateGpu(GpuSample sample)
