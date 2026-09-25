@@ -8,6 +8,7 @@
     <AssemblyName>Detective</AssemblyName>
     <Product>Detective</Product>
     <AssemblyTitle>Detective</AssemblyTitle>
+    <Version>1.0.1</Version>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\Detective.ico</ApplicationIcon>
     <Platforms>x64</Platforms>
