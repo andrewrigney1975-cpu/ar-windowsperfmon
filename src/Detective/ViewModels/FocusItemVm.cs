@@ -94,9 +94,9 @@ public abstract partial class FocusItemVm : ObservableObject
 
     public RingBuffer? TileSecondary { get; protected init; }
 
-    public ObservableCollection<Stat> LiveStats { get; } = new();
+    public StatCollection LiveStats { get; } = new();
 
-    public ObservableCollection<Stat> StaticInfo { get; } = new();
+    public StatCollection StaticInfo { get; } = new();
 
     [ObservableProperty]
     private double _tileMaximum = 100;
@@ -120,7 +120,7 @@ public abstract partial class FocusItemVm : ObservableObject
     public virtual Task LoadStaticAsync() => Task.CompletedTask;
 
     /// <summary>Adds or updates a stat in place so bound TextBlocks update without re-templating.</summary>
-    protected static void Set(ObservableCollection<Stat> list, string label, string value)
+    protected static void Set(StatCollection list, string label, string value)
     {
         foreach (var stat in list)
         {
@@ -134,7 +134,7 @@ public abstract partial class FocusItemVm : ObservableObject
     }
 
     /// <summary>Replaces a static block in one go (it changes rarely).</summary>
-    protected static void Replace(ObservableCollection<Stat> list, IEnumerable<(string Label, string Value)> rows)
+    protected static void Replace(StatCollection list, IEnumerable<(string Label, string Value)> rows)
     {
         list.Clear();
         foreach (var (label, value) in rows)

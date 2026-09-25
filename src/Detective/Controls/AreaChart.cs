@@ -86,24 +86,32 @@ public sealed partial class AreaChart : UserControl
         ApplyAccent();
     }
 
-    public static readonly DependencyProperty PrimaryProperty = DependencyProperty.Register(
-        nameof(Primary), typeof(object), typeof(AreaChart), new PropertyMetadata(null, OnDataChanged));
+    // Plain CLR properties rather than dependency properties: x:Bind can set them directly, and keeping the
+    // ring buffers on the .NET side avoids marshalling them as WinRT objects (which Native AOT can't do for
+    // types outside this assembly).
+    private RingBuffer? _primary;
+    private RingBuffer? _secondary;
 
-    /// <summary>The filled series (a <see cref="RingBuffer"/>).</summary>
-    public object? Primary
+    /// <summary>The filled series.</summary>
+    public RingBuffer? Primary
     {
-        get => GetValue(PrimaryProperty);
-        set => SetValue(PrimaryProperty, value);
+        get => _primary;
+        set
+        {
+            _primary = value;
+            Redraw();
+        }
     }
 
-    public static readonly DependencyProperty SecondaryProperty = DependencyProperty.Register(
-        nameof(Secondary), typeof(object), typeof(AreaChart), new PropertyMetadata(null, OnDataChanged));
-
-    /// <summary>Optional dashed series (a <see cref="RingBuffer"/>), e.g. disk writes or network send.</summary>
-    public object? Secondary
+    /// <summary>Optional dashed series, e.g. disk writes or network send.</summary>
+    public RingBuffer? Secondary
     {
-        get => GetValue(SecondaryProperty);
-        set => SetValue(SecondaryProperty, value);
+        get => _secondary;
+        set
+        {
+            _secondary = value;
+            Redraw();
+        }
     }
 
     public static readonly DependencyProperty MaximumProperty = DependencyProperty.Register(
@@ -161,7 +169,7 @@ public sealed partial class AreaChart : UserControl
         double w = _canvas.ActualWidth, h = _canvas.ActualHeight;
         if (w < 2 || h < 2) return;
 
-        var primary = Primary as RingBuffer;
+        var primary = Primary;
         int capacity = primary?.Capacity ?? RingBuffer.DefaultCapacity;
         double dx = w / (capacity - 1);
         double max = Maximum > 0 ? Maximum : 100;
@@ -179,7 +187,7 @@ public sealed partial class AreaChart : UserControl
             _line.Points = new PointCollection();
         }
 
-        _secondaryLine.Points = Secondary is RingBuffer { Count: > 0 } secondary
+        _secondaryLine.Points = Secondary is { Count: > 0 } secondary
             ? BuildPoints(secondary, w, h, dx, max, closed: false)
             : new PointCollection();
     }

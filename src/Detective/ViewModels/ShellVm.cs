@@ -42,7 +42,7 @@ public sealed partial class ShellVm : ObservableObject
 
     public MemoryVm Memory { get; } = new();
 
-    public ObservableCollection<FocusItemVm> Items { get; } = new();
+    public FocusItemCollection Items { get; } = new();
 
     [ObservableProperty]
     private FocusItemVm? _selected;

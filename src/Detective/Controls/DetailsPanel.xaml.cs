@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Text;
 using Detective.ViewModels;
 using Microsoft.UI.Xaml;
@@ -17,33 +16,29 @@ public sealed partial class DetailsPanel : UserControl
     /// <summary>The right-click menu, so a view can add its own commands next to Copy.</summary>
     public MenuFlyout Menu => (MenuFlyout)ContextFlyout;
 
-    public static readonly DependencyProperty LiveStatsProperty = DependencyProperty.Register(
-        nameof(LiveStats), typeof(object), typeof(DetailsPanel),
-        new PropertyMetadata(null, (d, e) => ((DetailsPanel)d).LiveRepeater.ItemsSource = e.NewValue));
+    private StatCollection? _liveStats;
+    private StatCollection? _staticInfo;
 
-    public object? LiveStats
+    /// <summary>Big live figures (left column). Plain property so x:Bind sets it without WinRT boxing.</summary>
+    public StatCollection? LiveStats
     {
-        get => GetValue(LiveStatsProperty);
-        set => SetValue(LiveStatsProperty, value);
+        get => _liveStats;
+        set => LiveRepeater.ItemsSource = _liveStats = value;
     }
 
-    public static readonly DependencyProperty StaticInfoProperty = DependencyProperty.Register(
-        nameof(StaticInfo), typeof(object), typeof(DetailsPanel),
-        new PropertyMetadata(null, (d, e) => ((DetailsPanel)d).StaticRepeater.ItemsSource = e.NewValue));
-
-    public object? StaticInfo
+    /// <summary>Static key/value facts (right column).</summary>
+    public StatCollection? StaticInfo
     {
-        get => GetValue(StaticInfoProperty);
-        set => SetValue(StaticInfoProperty, value);
+        get => _staticInfo;
+        set => StaticRepeater.ItemsSource = _staticInfo = value;
     }
 
     private void Copy_Click(object sender, RoutedEventArgs e)
     {
         var text = new StringBuilder();
         foreach (var source in new[] { LiveStats, StaticInfo })
-            if (source is IEnumerable items)
-                foreach (var stat in items.OfType<Stat>())
-                    text.AppendLine($"{stat.Label}\t{stat.Value}");
+            foreach (var stat in source ?? [])
+                text.AppendLine($"{stat.Label}\t{stat.Value}");
 
         var package = new DataPackage();
         package.SetText(text.ToString());

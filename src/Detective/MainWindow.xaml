@@ -115,7 +115,7 @@
                         VerticalScrollBarVisibility="Disabled"
                         Padding="12,6,12,6">
                         <!-- Two rows of tiles, filled column by column, scrolling sideways when they overflow. -->
-                        <ItemsRepeater ItemsSource="{x:Bind Shell.Items}">
+                        <ItemsRepeater x:Name="StripRepeater">
                             <ItemsRepeater.Layout>
                                 <UniformGridLayout
                                     x:Name="StripLayout"

@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Management;
 
 namespace Detective.Core;
 
@@ -122,30 +121,24 @@ public static class Wmi
     public const string Storage = @"root\Microsoft\Windows\Storage";
     public const string StandardCimv2 = @"root\StandardCimv2";
 
-    public static List<ManagementBaseObject> Query(string scope, string wql)
+    /// <summary>Runs an explicit "SELECT a, b FROM ..." query; returns an empty list on any failure.</summary>
+    public static List<WmiObject> Query(string scope, string wql) =>
+        Native.WmiClient.Query(scope, wql).Select(row => new WmiObject(row)).ToList();
+}
+
+/// <summary>One WMI result row.</summary>
+public sealed class WmiObject(Dictionary<string, object?> values)
+{
+    public object? Get(string name) => values.GetValueOrDefault(name);
+
+    public string Str(string name) => (Get(name)?.ToString() ?? "").Trim();
+
+    public ulong U64(string name) => Get(name) switch
     {
-        var list = new List<ManagementBaseObject>();
-        try
-        {
-            using var searcher = new ManagementObjectSearcher(scope, wql);
-            foreach (var o in searcher.Get()) list.Add(o);
-        }
-        catch (ManagementException) { }
-        catch (System.Runtime.InteropServices.COMException) { }
-        catch (UnauthorizedAccessException) { }
-        return list;
-    }
+        long l => (ulong)l,
+        string s when ulong.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v) => v,
+        _ => 0,
+    };
 
-    public static object? Get(this ManagementBaseObject o, string name)
-    {
-        try { return o[name]; }
-        catch (ManagementException) { return null; }
-    }
-
-    public static string Str(this ManagementBaseObject o, string name) => (o.Get(name)?.ToString() ?? "").Trim();
-
-    public static ulong U64(this ManagementBaseObject o, string name) =>
-        o.Get(name) is { } v ? Convert.ToUInt64(v, CultureInfo.InvariantCulture) : 0;
-
-    public static bool Bool(this ManagementBaseObject o, string name) => o.Get(name) is true;
+    public bool Bool(string name) => Get(name) is true;
 }

@@ -48,7 +48,7 @@ public sealed class AppSettings
         try
         {
             if (File.Exists(FilePath))
-                return JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(FilePath)) ?? new AppSettings();
+                return JsonSerializer.Deserialize(File.ReadAllText(FilePath), SettingsJson.Default.AppSettings) ?? new AppSettings();
         }
         catch (IOException) { }
         catch (JsonException) { }
@@ -62,7 +62,7 @@ public sealed class AppSettings
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
-            File.WriteAllText(FilePath, JsonSerializer.Serialize(this, new JsonSerializerOptions { WriteIndented = true }));
+            File.WriteAllText(FilePath, JsonSerializer.Serialize(this, SettingsJson.Default.AppSettings));
         }
         catch (IOException) { }
         catch (UnauthorizedAccessException) { }
@@ -75,3 +75,8 @@ public sealed class NetworkPeak
 
     public double ReceiveBitsPerSec { get; set; }
 }
+
+/// <summary>Source-generated serializer: reflection-based JSON doesn't survive trimming / Native AOT.</summary>
+[JsonSourceGenerationOptions(WriteIndented = true)]
+[JsonSerializable(typeof(AppSettings))]
+internal sealed partial class SettingsJson : JsonSerializerContext;

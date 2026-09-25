@@ -9,11 +9,9 @@
     <!-- DXGI enumeration calls COM vtables through function pointers. -->
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Platforms>x64</Platforms>
+    <!-- Consumed by the Native AOT app; the analyzers flag anything that would break trimming/AOT. -->
+    <IsAotCompatible>true</IsAotCompatible>
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="System.Management" Version="10.0.11" />
-  </ItemGroup>
 
   <ItemGroup>
     <InternalsVisibleTo Include="Detective.Core.Tests" />

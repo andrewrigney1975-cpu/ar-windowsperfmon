@@ -33,14 +33,17 @@ public sealed partial class CompositionBar : UserControl
         ApplyAccent();
     }
 
-    public static readonly DependencyProperty ValueProperty = DependencyProperty.Register(
-        nameof(Value), typeof(object), typeof(CompositionBar), new PropertyMetadata(null, (d, _) => ((CompositionBar)d).Update()));
+    private MemorySample? _value;
 
-    /// <summary>A <see cref="MemorySample"/>.</summary>
-    public object? Value
+    /// <summary>Plain property (not a DP) so the sample stays on the .NET side under Native AOT.</summary>
+    public MemorySample? Value
     {
-        get => GetValue(ValueProperty);
-        set => SetValue(ValueProperty, value);
+        get => _value;
+        set
+        {
+            _value = value;
+            Update();
+        }
     }
 
     public static readonly DependencyProperty AccentProperty = DependencyProperty.Register(

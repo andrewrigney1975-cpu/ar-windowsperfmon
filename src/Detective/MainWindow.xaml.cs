@@ -29,6 +29,8 @@ public sealed partial class MainWindow : Window
         if (SnapshotMode.Directory is not null) _settings.Persist = false;
         Shell = new ShellVm(_settings);
         InitializeComponent();
+        // Set in code rather than x:Bind so the Native AOT marshalling generator sees the collection type.
+        StripRepeater.ItemsSource = Shell.Items;
 
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);

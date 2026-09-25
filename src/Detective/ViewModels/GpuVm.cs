@@ -17,7 +17,7 @@ public sealed partial class EngineSlot : ObservableObject
         _selected = initial;
     }
 
-    public ObservableCollection<string> Options => _owner.EngineNames;
+    public NameCollection Options => _owner.EngineNames;
 
     /// <summary>Object-typed for ComboBox.SelectedItem; null (sent while ItemsSource swaps) is ignored.</summary>
     public object? Selected
@@ -76,7 +76,7 @@ public sealed partial class GpuVm : FocusItemVm
 
     public string[] SelectedEngines => Slots.Select(s => s.Name).ToArray();
 
-    public ObservableCollection<string> EngineNames { get; } = new();
+    public NameCollection EngineNames { get; } = new();
 
     internal Dictionary<string, RingBuffer> History { get; } = new();
 

@@ -51,7 +51,7 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
-                <ComboBox Style="{StaticResource EngineComboStyle}" ItemsSource="{x:Bind Vm.Slot0.Options, Mode=OneWay}" SelectedItem="{x:Bind Vm.Slot0.Selected, Mode=TwoWay}" />
+                <ComboBox x:Name="Engine0" Style="{StaticResource EngineComboStyle}" SelectedItem="{x:Bind Vm.Slot0.Selected, Mode=TwoWay}" />
                 <TextBlock Text="{x:Bind Vm.Slot0.Value, Mode=OneWay}" Style="{StaticResource ChartCaptionStyle}" HorizontalAlignment="Right" VerticalAlignment="Bottom" />
                 <c:AreaChart Grid.Row="1" Primary="{x:Bind Vm.Slot0.Series, Mode=OneWay}" Accent="{x:Bind Vm.Accent, Mode=OneWay}" />
             </Grid>
@@ -61,7 +61,7 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
-                <ComboBox Style="{StaticResource EngineComboStyle}" ItemsSource="{x:Bind Vm.Slot1.Options, Mode=OneWay}" SelectedItem="{x:Bind Vm.Slot1.Selected, Mode=TwoWay}" />
+                <ComboBox x:Name="Engine1" Style="{StaticResource EngineComboStyle}" SelectedItem="{x:Bind Vm.Slot1.Selected, Mode=TwoWay}" />
                 <TextBlock Text="{x:Bind Vm.Slot1.Value, Mode=OneWay}" Style="{StaticResource ChartCaptionStyle}" HorizontalAlignment="Right" VerticalAlignment="Bottom" />
                 <c:AreaChart Grid.Row="1" Primary="{x:Bind Vm.Slot1.Series, Mode=OneWay}" Accent="{x:Bind Vm.Accent, Mode=OneWay}" />
             </Grid>
@@ -71,7 +71,7 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
-                <ComboBox Style="{StaticResource EngineComboStyle}" ItemsSource="{x:Bind Vm.Slot2.Options, Mode=OneWay}" SelectedItem="{x:Bind Vm.Slot2.Selected, Mode=TwoWay}" />
+                <ComboBox x:Name="Engine2" Style="{StaticResource EngineComboStyle}" SelectedItem="{x:Bind Vm.Slot2.Selected, Mode=TwoWay}" />
                 <TextBlock Text="{x:Bind Vm.Slot2.Value, Mode=OneWay}" Style="{StaticResource ChartCaptionStyle}" HorizontalAlignment="Right" VerticalAlignment="Bottom" />
                 <c:AreaChart Grid.Row="1" Primary="{x:Bind Vm.Slot2.Series, Mode=OneWay}" Accent="{x:Bind Vm.Accent, Mode=OneWay}" />
             </Grid>
@@ -81,7 +81,7 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
-                <ComboBox Style="{StaticResource EngineComboStyle}" ItemsSource="{x:Bind Vm.Slot3.Options, Mode=OneWay}" SelectedItem="{x:Bind Vm.Slot3.Selected, Mode=TwoWay}" />
+                <ComboBox x:Name="Engine3" Style="{StaticResource EngineComboStyle}" SelectedItem="{x:Bind Vm.Slot3.Selected, Mode=TwoWay}" />
                 <TextBlock Text="{x:Bind Vm.Slot3.Value, Mode=OneWay}" Style="{StaticResource ChartCaptionStyle}" HorizontalAlignment="Right" VerticalAlignment="Bottom" />
                 <c:AreaChart Grid.Row="1" Primary="{x:Bind Vm.Slot3.Series, Mode=OneWay}" Accent="{x:Bind Vm.Accent, Mode=OneWay}" />
             </Grid>

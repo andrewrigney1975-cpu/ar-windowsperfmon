@@ -14,7 +14,7 @@
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <UseWinUI>true</UseWinUI>
     <!-- Personal sideload: unpackaged and self-contained, no MSIX. -->
-    <EnableMsixTooling>false</EnableMsixTooling>
+    <EnableMsixTooling>true</EnableMsixTooling>
     <WindowsPackageType>None</WindowsPackageType>
     <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
     <SelfContained>true</SelfContained>
@@ -22,9 +22,59 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
     <NeutralLanguage>en-US</NeutralLanguage>
-    <!-- MVVMTK0045 flags [ObservableProperty] fields as not Native-AOT safe; this app is not AOT-compiled. -->
+    <!-- MVVMTK0045 flags [ObservableProperty] fields: they are only reached through x:Bind's generated C# code,
+         never through WinRT reflection, so the AOT concern it describes doesn't apply here. -->
     <NoWarn>$(NoWarn);MVVMTK0045</NoWarn>
   </PropertyGroup>
+
+  <!-- Release publish: as small and light as possible. Native AOT means no JIT, no IL, a fast start and a
+       much smaller working set; trimming comes with it. -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <PublishAot>true</PublishAot>
+    <OptimizationPreference>Size</OptimizationPreference>
+    <UseSystemResourceKeys>true</UseSystemResourceKeys>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <DebugType>none</DebugType>
+    <!-- A sampling app doesn't need a background GC thread. -->
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
+  </PropertyGroup>
+
+  <!-- The Windows App SDK ships UI string resources for ~90 languages; keep English only. -->
+  <Target Name="PruneLanguages" AfterTargets="Publish" Condition="'$(Configuration)' == 'Release'">
+    <ItemGroup>
+      <_CultureDirs Include="$([System.IO.Directory]::GetDirectories('$(PublishDir)'))" />
+      <_CultureDirs Remove="@(_CultureDirs)" Condition="'%(Filename)%(Extension)' == 'Assets' or '%(Filename)%(Extension)' == 'en-US' or '%(Filename)%(Extension)' == 'en-us' or '%(Filename)%(Extension)' == 'en'" />
+    </ItemGroup>
+    <RemoveDir Directories="@(_CultureDirs)" />
+  </Target>
+
+  <!-- Windows App SDK components Detective never loads: AI/ML workloads, widgets, push notifications,
+       WebView2, background tasks, deployment helpers, and .winmd metadata (only needed at build time).
+       Each removal was checked against every view, tile clicks, the settings flyout and the GPU pickers.
+       WinUIEdit.dll and Microsoft.UI.Xaml.Phone.dll look unused but are required at startup; keep them. -->
+  <Target Name="PruneUnusedRuntime" AfterTargets="Publish" Condition="'$(Configuration)' == 'Release'">
+    <ItemGroup>
+      <_Unused Include="$(PublishDir)*.winmd" />
+      <_Unused Include="$(PublishDir)*.pdb" />
+      <_Unused Include="$(PublishDir)Microsoft.Windows.AI.*" />
+      <_Unused Include="$(PublishDir)Microsoft.Windows.Workloads*" />
+      <_Unused Include="$(PublishDir)workloads*.json" />
+      <_Unused Include="$(PublishDir)Microsoft.Windows.Widgets.dll" />
+      <_Unused Include="$(PublishDir)Microsoft.Web.WebView2.Core.dll" />
+      <_Unused Include="$(PublishDir)WebView2Loader.dll" />
+      <_Unused Include="$(PublishDir)PushNotificationsLongRunningTask.ProxyStub.dll" />
+      <_Unused Include="$(PublishDir)RestartAgent.exe" />
+      <_Unused Include="$(PublishDir)Microsoft.Windows.ApplicationModel.Background.UniversalBGTask.dll" />
+      <_Unused Include="$(PublishDir)WindowsAppRuntime.DeploymentExtensions.OneCore.dll" />
+      <_Unused Include="$(PublishDir)WindowsAppSdk.AppxDeploymentExtensions.Desktop*.dll" />
+      <_Unused Include="$(PublishDir)Microsoft.WindowsAppRuntime.Insights.Resource.dll" />
+      <_Unused Include="$(PublishDir)WindowsAppRuntime.png" />
+      <_Unused Include="$(PublishDir)Microsoft.Graphics.Imaging.dll" />
+      <_Unused Include="$(PublishDir)SessionHandleIPCProxyStub.dll" />
+    </ItemGroup>
+    <Delete Files="@(_Unused)" />
+    <RemoveDir Directories="$(PublishDir)NpuDetect" />
+  </Target>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.250606001" />
