@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="Detective.Views.NetworkView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:c="using:Detective.Controls"
+    xmlns:vm="using:Detective.ViewModels">
+
+    <Grid RowSpacing="4">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" MinHeight="80" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Grid Margin="0,0,0,12" ColumnSpacing="16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="{x:Bind Vm.Title, Mode=OneWay}" Style="{StaticResource FocusTitleStyle}" />
+            <TextBlock Grid.Column="1" Text="{x:Bind Vm.Subtitle, Mode=OneWay}" Style="{StaticResource FocusSubtitleStyle}" />
+        </Grid>
+
+        <Grid Grid.Row="1">
+            <TextBlock Text="Throughput     ━ Receive    ┅ Send" Style="{StaticResource ChartCaptionStyle}" />
+            <TextBlock Text="{x:Bind Vm.ThroughputMaxLabel, Mode=OneWay}" Style="{StaticResource ChartCaptionStyle}" HorizontalAlignment="Right" />
+        </Grid>
+        <c:AreaChart Grid.Row="2"
+            Primary="{x:Bind Vm.Receive, Mode=OneWay}"
+            Secondary="{x:Bind Vm.Send, Mode=OneWay}"
+            Maximum="{x:Bind Vm.TileMaximum, Mode=OneWay}"
+            Accent="{x:Bind Vm.Accent, Mode=OneWay}" />
+        <Grid Grid.Row="3">
+            <TextBlock Text="{x:Bind vm:ChartWindow.Current.Caption, Mode=OneWay}" Style="{StaticResource ChartCaptionStyle}" />
+            <TextBlock Text="0" Style="{StaticResource ChartCaptionStyle}" HorizontalAlignment="Right" />
+        </Grid>
+
+        <c:DetailsPanel Grid.Row="4" Margin="0,16,0,0"
+            LiveStats="{x:Bind Vm.LiveStats, Mode=OneWay}"
+            StaticInfo="{x:Bind Vm.StaticInfo, Mode=OneWay}" />
+    </Grid>
+</UserControl>

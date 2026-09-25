@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="Detective.Views.GpuView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:c="using:Detective.Controls"
+    xmlns:vm="using:Detective.ViewModels">
+
+    <UserControl.Resources>
+        <Style x:Key="EngineComboStyle" TargetType="ComboBox">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="MinWidth" Value="150" />
+            <Setter Property="Padding" Value="8,3,0,4" />
+            <Setter Property="MinHeight" Value="28" />
+        </Style>
+    </UserControl.Resources>
+
+    <Grid RowSpacing="4">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="6*" MinHeight="180" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" MinHeight="32" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" MinHeight="32" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Grid Margin="0,0,0,12" ColumnSpacing="16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="{x:Bind Vm.Title, Mode=OneWay}" Style="{StaticResource FocusTitleStyle}" />
+            <TextBlock Grid.Column="1" Text="{x:Bind Vm.Subtitle, Mode=OneWay}" Style="{StaticResource FocusSubtitleStyle}" />
+        </Grid>
+
+        <!-- Four engine charts, each with a picker on its title like Task Manager. -->
+        <Grid Grid.Row="1" RowSpacing="12" ColumnSpacing="16">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Grid RowSpacing="4">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <ComboBox Style="{StaticResource EngineComboStyle}" ItemsSource="{x:Bind Vm.Slot0.Options, Mode=OneWay}" SelectedItem="{x:Bind Vm.Slot0.Selected, Mode=TwoWay}" />
+                <TextBlock Text="{x:Bind Vm.Slot0.Value, Mode=OneWay}" Style="{StaticResource ChartCaptionStyle}" HorizontalAlignment="Right" VerticalAlignment="Bottom" />
+                <c:AreaChart Grid.Row="1" Primary="{x:Bind Vm.Slot0.Series, Mode=OneWay}" Accent="{x:Bind Vm.Accent, Mode=OneWay}" />
+            </Grid>
+
+            <Grid Grid.Column="1" RowSpacing="4">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <ComboBox Style="{StaticResource EngineComboStyle}" ItemsSource="{x:Bind Vm.Slot1.Options, Mode=OneWay}" SelectedItem="{x:Bind Vm.Slot1.Selected, Mode=TwoWay}" />
+                <TextBlock Text="{x:Bind Vm.Slot1.Value, Mode=OneWay}" Style="{StaticResource ChartCaptionStyle}" HorizontalAlignment="Right" VerticalAlignment="Bottom" />
+                <c:AreaChart Grid.Row="1" Primary="{x:Bind Vm.Slot1.Series, Mode=OneWay}" Accent="{x:Bind Vm.Accent, Mode=OneWay}" />
+            </Grid>
+
+            <Grid Grid.Row="1" RowSpacing="4">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <ComboBox Style="{StaticResource EngineComboStyle}" ItemsSource="{x:Bind Vm.Slot2.Options, Mode=OneWay}" SelectedItem="{x:Bind Vm.Slot2.Selected, Mode=TwoWay}" />
+                <TextBlock Text="{x:Bind Vm.Slot2.Value, Mode=OneWay}" Style="{StaticResource ChartCaptionStyle}" HorizontalAlignment="Right" VerticalAlignment="Bottom" />
+                <c:AreaChart Grid.Row="1" Primary="{x:Bind Vm.Slot2.Series, Mode=OneWay}" Accent="{x:Bind Vm.Accent, Mode=OneWay}" />
+            </Grid>
+
+            <Grid Grid.Row="1" Grid.Column="1" RowSpacing="4">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <ComboBox Style="{StaticResource EngineComboStyle}" ItemsSource="{x:Bind Vm.Slot3.Options, Mode=OneWay}" SelectedItem="{x:Bind Vm.Slot3.Selected, Mode=TwoWay}" />
+                <TextBlock Text="{x:Bind Vm.Slot3.Value, Mode=OneWay}" Style="{StaticResource ChartCaptionStyle}" HorizontalAlignment="Right" VerticalAlignment="Bottom" />
+                <c:AreaChart Grid.Row="1" Primary="{x:Bind Vm.Slot3.Series, Mode=OneWay}" Accent="{x:Bind Vm.Accent, Mode=OneWay}" />
+            </Grid>
+        </Grid>
+
+        <Grid Grid.Row="2" Margin="0,12,0,0">
+            <TextBlock Text="Dedicated GPU memory usage" Style="{StaticResource ChartCaptionStyle}" />
+            <TextBlock Text="{x:Bind Vm.DedicatedLabel, Mode=OneWay}" Style="{StaticResource ChartCaptionStyle}" HorizontalAlignment="Right" />
+        </Grid>
+        <c:AreaChart Grid.Row="3" Primary="{x:Bind Vm.Dedicated, Mode=OneWay}" Accent="{x:Bind Vm.Accent, Mode=OneWay}" ShowGrid="False" />
+
+        <Grid Grid.Row="4" Margin="0,8,0,0">
+            <TextBlock Text="Shared GPU memory usage" Style="{StaticResource ChartCaptionStyle}" />
+            <TextBlock Text="{x:Bind Vm.SharedLabel, Mode=OneWay}" Style="{StaticResource ChartCaptionStyle}" HorizontalAlignment="Right" />
+        </Grid>
+        <c:AreaChart Grid.Row="5" Primary="{x:Bind Vm.Shared, Mode=OneWay}" Accent="{x:Bind Vm.Accent, Mode=OneWay}" ShowGrid="False" />
+
+        <c:DetailsPanel Grid.Row="6" Margin="0,16,0,0"
+            LiveStats="{x:Bind Vm.LiveStats, Mode=OneWay}"
+            StaticInfo="{x:Bind Vm.StaticInfo, Mode=OneWay}" />
+    </Grid>
+</UserControl>

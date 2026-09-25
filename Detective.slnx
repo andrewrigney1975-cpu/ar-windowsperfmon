@@ -1,0 +1,12 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+  </Configurations>
+  <Folder Name="/src/">
+    <Project Path="src/Detective.Core/Detective.Core.csproj" />
+    <Project Path="src/Detective/Detective.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Detective.Core.Tests/Detective.Core.Tests.csproj" />
+  </Folder>
+</Solution>
