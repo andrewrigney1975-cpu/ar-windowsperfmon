@@ -15,6 +15,7 @@ public sealed partial class MainWindow : Window
     private const double StripMaxHeight = 300;
     private const double StripMaxFraction = 0.30;
     private const int StripRows = 2;
+    private const double TileMinWidth = 80;
 
     private readonly AppSettings _settings = AppSettings.Load();
     private readonly Sampler _sampler;
@@ -31,6 +32,8 @@ public sealed partial class MainWindow : Window
         InitializeComponent();
         // Set in code rather than x:Bind so the Native AOT marshalling generator sees the collection type.
         StripRepeater.ItemsSource = Shell.Items;
+        // Tiles come and go (adapters connect, disks are added), so refit the strip's widths each time.
+        Shell.Items.CollectionChanged += (_, _) => SizeStrip();
         // WinUI gives the first control (the ☰ button) programmatic focus at startup, which draws a focus
         // rectangle. Pointer focus keeps the same focus target without the rectangle until the keyboard is used.
         RootGrid.Loaded += (_, _) => Nav.Focus(FocusState.Pointer);
@@ -138,17 +141,25 @@ public sealed partial class MainWindow : Window
 
     /// <summary>
     /// The strip takes at most 300 px and at most 30% of the pane, so the focus area keeps ≥ 70%.
-    /// Tiles sit in two rows; each tile's chart is kept a little wider than tall.
+    /// Tiles sit in two rows and share the pane's width equally, so they always fill it exactly,
+    /// down to a floor below which the strip scrolls instead.
     /// </summary>
-    private void ContentRoot_SizeChanged(object sender, SizeChangedEventArgs e)
+    private void ContentRoot_SizeChanged(object sender, SizeChangedEventArgs e) => SizeStrip();
+
+    private void SizeStrip()
     {
-        double strip = Math.Floor(Math.Min(StripMaxHeight, e.NewSize.Height * StripMaxFraction));
+        double paneWidth = ContentRoot.ActualWidth, paneHeight = ContentRoot.ActualHeight;
+        if (paneWidth <= 0 || paneHeight <= 0) return;
+
+        double strip = Math.Floor(Math.Min(StripMaxHeight, paneHeight * StripMaxFraction));
         StripRow.Height = new GridLength(strip);
 
-        const double verticalPadding = 12 + 1, rowSpacing = 6, labels = 34, tilePadding = 10;
-        double tileHeight = Math.Max(60, Math.Floor((strip - verticalPadding - rowSpacing) / StripRows));
-        double chartHeight = Math.Max(24, tileHeight - labels - tilePadding);
-        double tileWidth = Math.Floor(Math.Clamp(chartHeight * 1.6 + tilePadding, 110, 220));
+        const double verticalPadding = 12 + 1, horizontalPadding = 12 + 12, spacing = 6;
+        double tileHeight = Math.Max(60, Math.Floor((strip - verticalPadding - spacing) / StripRows));
+
+        int columns = Math.Max(1, (Shell.Items.Count + StripRows - 1) / StripRows);
+        double fitWidth = Math.Floor((paneWidth - horizontalPadding - (columns - 1) * spacing) / columns);
+        double tileWidth = Math.Max(TileMinWidth, fitWidth);
 
         ChartWindow.Current.TileHeight = tileHeight;
         ChartWindow.Current.TileWidth = tileWidth;
