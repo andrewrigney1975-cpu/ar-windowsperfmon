@@ -47,7 +47,7 @@
             <TextBlock Text="0" Style="{StaticResource ChartCaptionStyle}" HorizontalAlignment="Right" />
         </Grid>
 
-        <c:DetailsPanel x:Name="Details" Grid.Row="4" Margin="0,16,0,0"
+        <c:DetailsPanel x:Name="Details" Grid.Row="4" Margin="0,16,0,0" LiveColumns="2"
             LiveStats="{x:Bind Vm.LiveStats, Mode=OneWay}"
             StaticInfo="{x:Bind Vm.StaticInfo, Mode=OneWay}" />
     </Grid>

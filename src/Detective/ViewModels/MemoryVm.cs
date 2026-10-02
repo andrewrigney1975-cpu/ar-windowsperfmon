@@ -62,7 +62,6 @@ public sealed partial class MemoryVm : FocusItemVm
             ("Form factor", first?.FormFactor ?? ""),
             ("Type", first?.Type ?? ""),
             ("Voltage", first is { VoltageMv: > 0 } ? $"{first.VoltageMv / 1000.0:0.00} V" : ""),
-            ("Timings", "Unavailable (needs SPD access via a kernel driver)"),
             ("Hardware reserved", _hardwareReserved > 0 ? Format.Bytes(_hardwareReserved) : ""),
         };
         foreach (var m in info.Modules)

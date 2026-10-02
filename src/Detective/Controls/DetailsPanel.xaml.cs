@@ -26,6 +26,13 @@ public sealed partial class DetailsPanel : UserControl
         set => LiveRepeater.ItemsSource = _liveStats = value;
     }
 
+    /// <summary>Most live figures per row (default 3).</summary>
+    public int LiveColumns
+    {
+        get => LiveLayout.MaximumRowsOrColumns;
+        set => LiveLayout.MaximumRowsOrColumns = value;
+    }
+
     /// <summary>Static key/value facts (right column).</summary>
     public StatCollection? StaticInfo
     {

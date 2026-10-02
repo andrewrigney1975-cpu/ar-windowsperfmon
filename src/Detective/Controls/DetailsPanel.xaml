@@ -25,7 +25,7 @@
 
             <ItemsRepeater x:Name="LiveRepeater" VerticalAlignment="Top">
                 <ItemsRepeater.Layout>
-                    <UniformGridLayout MinItemWidth="120" MinColumnSpacing="16" MinRowSpacing="10" ItemsStretch="Fill" MaximumRowsOrColumns="3" />
+                    <UniformGridLayout x:Name="LiveLayout" MinItemWidth="120" MinColumnSpacing="16" MinRowSpacing="10" ItemsStretch="Fill" MaximumRowsOrColumns="3" />
                 </ItemsRepeater.Layout>
                 <ItemsRepeater.ItemTemplate>
                     <DataTemplate x:DataType="vm:Stat">

@@ -77,11 +77,12 @@ public sealed partial class NetworkVm : FocusItemVm
             PeaksChanged?.Invoke(this, EventArgs.Empty);
         }
 
-        Set(LiveStats, "Send", Format.BitRate(s.SendBitsPerSec));
+        // Two columns: Receive | Send, Max receive | Max send, then signal strength on its own row.
         Set(LiveStats, "Receive", Format.BitRate(s.ReceiveBitsPerSec));
-        if (s.Wlan is { AccessDenied: false } w) Set(LiveStats, "Signal strength", $"{w.SignalQuality}%");
-        Set(LiveStats, "Max send", Format.BitRate(PeakSend));
+        Set(LiveStats, "Send", Format.BitRate(s.SendBitsPerSec));
         Set(LiveStats, "Max receive", Format.BitRate(PeakReceive));
+        Set(LiveStats, "Max send", Format.BitRate(PeakSend));
+        if (s.Wlan is { AccessDenied: false } w) Set(LiveStats, "Signal strength", $"{w.SignalQuality}%");
 
         if (++_ticks % AddressRefreshTicks == 0) _ = RefreshAddressesAsync();
         else if (wlanChanged) ShowStatic();
