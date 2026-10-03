@@ -40,11 +40,12 @@
     <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
   </PropertyGroup>
 
-  <!-- The Windows App SDK ships UI string resources for ~90 languages; keep English only. -->
+  <!-- The Windows App SDK ships UI string resources for ~90 languages; keep English only. Microsoft.UI.Xaml
+       isn't a language: its Assets hold the acrylic noise texture, without which flyouts render transparent. -->
   <Target Name="PruneLanguages" AfterTargets="Publish" Condition="'$(Configuration)' == 'Release'">
     <ItemGroup>
       <_CultureDirs Include="$([System.IO.Directory]::GetDirectories('$(PublishDir)'))" />
-      <_CultureDirs Remove="@(_CultureDirs)" Condition="'%(Filename)%(Extension)' == 'Assets' or '%(Filename)%(Extension)' == 'en-US' or '%(Filename)%(Extension)' == 'en-us' or '%(Filename)%(Extension)' == 'en'" />
+      <_CultureDirs Remove="@(_CultureDirs)" Condition="'%(Filename)%(Extension)' == 'Assets' or '%(Filename)%(Extension)' == 'Microsoft.UI.Xaml' or '%(Filename)%(Extension)' == 'en-US' or '%(Filename)%(Extension)' == 'en-us' or '%(Filename)%(Extension)' == 'en'" />
     </ItemGroup>
     <RemoveDir Directories="@(_CultureDirs)" />
   </Target>
