@@ -38,6 +38,19 @@ public sealed partial class ShellVm : ObservableObject
         };
     }
 
+    /// <summary>Wi-Fi charts use a fixed axis based on the adapter's maximum speed (see NetworkVm.FixedWifiAxis).</summary>
+    public bool FixedWifiAxis
+    {
+        get => _settings.FixedWifiAxis;
+        set
+        {
+            if (_settings.FixedWifiAxis == value) return;
+            _settings.FixedWifiAxis = value;
+            foreach (var vm in Items.OfType<NetworkVm>()) vm.FixedWifiAxis = value;
+            _settings.Save();
+        }
+    }
+
     public CpuVm Cpu { get; } = new();
 
     public MemoryVm Memory { get; } = new();
@@ -109,7 +122,10 @@ public sealed partial class ShellVm : ObservableObject
     private NetworkVm CreateNetwork(NetworkSample sample)
     {
         var saved = _settings.NetworkPeaks.GetValueOrDefault(sample.Id);
-        var vm = new NetworkVm(sample, saved?.SendBitsPerSec ?? 0, saved?.ReceiveBitsPerSec ?? 0);
+        var vm = new NetworkVm(sample, saved?.SendBitsPerSec ?? 0, saved?.ReceiveBitsPerSec ?? 0)
+        {
+            FixedWifiAxis = _settings.FixedWifiAxis,
+        };
         vm.PeaksChanged += (_, _) =>
         {
             // Settings are updated in memory at once (so a normal close saves them); the file write is throttled

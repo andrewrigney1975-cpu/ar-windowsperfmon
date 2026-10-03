@@ -84,6 +84,7 @@
                                     <x:String>Light</x:String>
                                     <x:String>Dark</x:String>
                                 </RadioButtons>
+                                <CheckBox x:Name="FixedWifiAxisCheck" Content="Do not scale Wi-Fi speed axis" Click="FixedWifiAxisCheck_Click" />
                             </StackPanel>
                         </Flyout>
                     </FlyoutBase.AttachedFlyout>

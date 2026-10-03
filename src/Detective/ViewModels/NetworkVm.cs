@@ -9,6 +9,9 @@ public sealed partial class NetworkVm : FocusItemVm
 {
     private const int AddressRefreshTicks = 10;
 
+    /// <summary>Fixed-axis maximum speed used until a peak has been recorded: 250 Mbps.</summary>
+    private const double DefaultFixedPeak = 250_000_000;
+
     private NetworkSample? _last;
     private NetworkAdapterInfo? _info;
     private NetworkAddresses? _addresses;
@@ -37,6 +40,7 @@ public sealed partial class NetworkVm : FocusItemVm
     {
         PeakSend = 0;
         PeakReceive = 0;
+        UpdateScale();
         Set(LiveStats, "Max send", Format.BitRate(0));
         Set(LiveStats, "Max receive", Format.BitRate(0));
         PeaksReset?.Invoke(this, EventArgs.Empty);
@@ -53,6 +57,23 @@ public sealed partial class NetworkVm : FocusItemVm
     [ObservableProperty]
     private string _throughputMaxLabel = "";
 
+    /// <summary>
+    /// When set, a Wi-Fi adapter's axis runs from 0 to 1.25 × the faster of its maximum send and receive
+    /// speeds rather than autoscaling to the visible history.
+    /// </summary>
+    public bool FixedWifiAxis
+    {
+        get => _fixedWifiAxis;
+        set
+        {
+            if (_fixedWifiAxis == value) return;
+            _fixedWifiAxis = value;
+            UpdateScale();
+        }
+    }
+
+    private bool _fixedWifiAxis;
+
     /// <summary>Tile label, e.g. "Wi-Fi" or "Ethernet 2" when there are several of a type.</summary>
     public string TypeLabel { get; set; } = "";
 
@@ -62,9 +83,6 @@ public sealed partial class NetworkVm : FocusItemVm
         _last = s;
         Receive.Add((float)s.ReceiveBitsPerSec);
         Send.Add((float)s.SendBitsPerSec);
-
-        TileMaximum = NiceScale.Decimal(Math.Max(Receive.Max(), Send.Max()), 100_000);
-        ThroughputMaxLabel = Format.BitRate(TileMaximum);
 
         Title = TypeLabel;
         TileTitle = TypeLabel;
@@ -76,6 +94,7 @@ public sealed partial class NetworkVm : FocusItemVm
             PeakReceive = Math.Max(PeakReceive, s.ReceiveBitsPerSec);
             PeaksChanged?.Invoke(this, EventArgs.Empty);
         }
+        UpdateScale();
 
         // Two columns: Receive | Send, Max receive | Max send, then signal strength on its own row.
         Set(LiveStats, "Receive", Format.BitRate(s.ReceiveBitsPerSec));
@@ -86,6 +105,20 @@ public sealed partial class NetworkVm : FocusItemVm
 
         if (++_ticks % AddressRefreshTicks == 0) _ = RefreshAddressesAsync();
         else if (wlanChanged) ShowStatic();
+    }
+
+    private void UpdateScale()
+    {
+        if (_fixedWifiAxis && _last?.TypeLabel == "Wi-Fi")
+        {
+            double peak = Math.Max(PeakSend, PeakReceive);
+            TileMaximum = 1.25 * (peak > 0 ? peak : DefaultFixedPeak);
+        }
+        else
+        {
+            TileMaximum = NiceScale.Decimal(Math.Max(Receive.Max(), Send.Max()), 100_000);
+        }
+        ThroughputMaxLabel = Format.BitRate(TileMaximum);
     }
 
     public override async Task LoadStaticAsync()

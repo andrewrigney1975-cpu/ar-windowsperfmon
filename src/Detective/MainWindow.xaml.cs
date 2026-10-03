@@ -62,6 +62,7 @@ public sealed partial class MainWindow : Window
 
         SpeedRadios.SelectedIndex = Math.Clamp(_settings.SpeedIndex, 0, 3);
         ThemeRadios.SelectedIndex = Math.Clamp(_settings.ThemeIndex, 0, 2);
+        FixedWifiAxisCheck.IsChecked = _settings.FixedWifiAxis;
         ApplyTheme();
         ChartWindow.Current.SetInterval(_settings.Interval);
 
@@ -202,6 +203,9 @@ public sealed partial class MainWindow : Window
         ApplyTheme();
         _settings.Save();
     }
+
+    private void FixedWifiAxisCheck_Click(object sender, RoutedEventArgs e) =>
+        Shell.FixedWifiAxis = FixedWifiAxisCheck.IsChecked == true;
 
     private void ApplyTheme()
     {
