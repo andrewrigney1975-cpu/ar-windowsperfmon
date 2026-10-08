@@ -33,6 +33,13 @@ public sealed partial class DetailsPanel : UserControl
         set => LiveLayout.MaximumRowsOrColumns = value;
     }
 
+    /// <summary>Optional extra content shown beneath the live figures.</summary>
+    public object? LiveFooter
+    {
+        get => LiveFooterPresenter.Content;
+        set => LiveFooterPresenter.Content = value;
+    }
+
     /// <summary>Static key/value facts (right column).</summary>
     public StatCollection? StaticInfo
     {

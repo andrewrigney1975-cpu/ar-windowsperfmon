@@ -23,7 +23,8 @@
                 <ColumnDefinition Width="6*" />
             </Grid.ColumnDefinitions>
 
-            <ItemsRepeater x:Name="LiveRepeater" VerticalAlignment="Top">
+            <StackPanel VerticalAlignment="Top" Spacing="10">
+            <ItemsRepeater x:Name="LiveRepeater">
                 <ItemsRepeater.Layout>
                     <UniformGridLayout x:Name="LiveLayout" MinItemWidth="120" MinColumnSpacing="16" MinRowSpacing="10" ItemsStretch="Fill" MaximumRowsOrColumns="3" />
                 </ItemsRepeater.Layout>
@@ -36,6 +37,8 @@
                     </DataTemplate>
                 </ItemsRepeater.ItemTemplate>
             </ItemsRepeater>
+            <ContentPresenter x:Name="LiveFooterPresenter" />
+            </StackPanel>
 
             <ItemsRepeater x:Name="StaticRepeater" Grid.Column="1" VerticalAlignment="Top">
                 <ItemsRepeater.Layout>

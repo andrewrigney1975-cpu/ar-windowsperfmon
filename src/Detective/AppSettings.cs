@@ -20,7 +20,7 @@ public sealed class AppSettings
     /// <summary>CPU view shows the per-logical-processor grid instead of overall utilization.</summary>
     public bool CpuShowLogical { get; set; }
 
-    /// <summary>Wi-Fi charts keep a fixed axis (0 to 1.25 × the adapter's maximum speed) instead of autoscaling.</summary>
+    /// <summary>Wi-Fi charts keep a fixed axis (0 to the next multiple of 5 Mbps above the adapter's maximum receive speed) instead of autoscaling.</summary>
     public bool FixedWifiAxis { get; set; }
 
     /// <summary>Highest send/receive rates seen per network adapter (interface GUID), in bits per second.</summary>

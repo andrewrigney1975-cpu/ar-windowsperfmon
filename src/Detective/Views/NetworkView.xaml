@@ -49,6 +49,13 @@
 
         <c:DetailsPanel x:Name="Details" Grid.Row="4" Margin="0,16,0,0" LiveColumns="2"
             LiveStats="{x:Bind Vm.LiveStats, Mode=OneWay}"
-            StaticInfo="{x:Bind Vm.StaticInfo, Mode=OneWay}" />
+            StaticInfo="{x:Bind Vm.StaticInfo, Mode=OneWay}">
+            <c:DetailsPanel.LiveFooter>
+                <!-- Shrinks rather than clips when "100.0%" is wider than the column. -->
+                <Viewbox StretchDirection="DownOnly" HorizontalAlignment="Left">
+                    <TextBlock Text="{x:Bind Vm.ReceivePercent, Mode=OneWay}" FontSize="112" FontWeight="SemiBold" />
+                </Viewbox>
+            </c:DetailsPanel.LiveFooter>
+        </c:DetailsPanel>
     </Grid>
 </UserControl>

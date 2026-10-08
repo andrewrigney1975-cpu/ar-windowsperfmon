@@ -12,6 +12,9 @@ public sealed partial class NetworkVm : FocusItemVm
     /// <summary>Fixed-axis maximum speed used until a peak has been recorded: 250 Mbps.</summary>
     private const double DefaultFixedPeak = 250_000_000;
 
+    /// <summary>The fixed axis tops out at the next multiple of 5 Mbps above the maximum receive speed.</summary>
+    private const double FixedAxisStep = 5_000_000;
+
     private NetworkSample? _last;
     private NetworkAdapterInfo? _info;
     private NetworkAddresses? _addresses;
@@ -43,6 +46,7 @@ public sealed partial class NetworkVm : FocusItemVm
         UpdateScale();
         Set(LiveStats, "Max send", Format.BitRate(0));
         Set(LiveStats, "Max receive", Format.BitRate(0));
+        ReceivePercent = FormatPercent(0);
         PeaksReset?.Invoke(this, EventArgs.Empty);
     }
 
@@ -57,9 +61,13 @@ public sealed partial class NetworkVm : FocusItemVm
     [ObservableProperty]
     private string _throughputMaxLabel = "";
 
+    /// <summary>Current receive rate as a percentage of the maximum receive rate, e.g. "42.5%".</summary>
+    [ObservableProperty]
+    private string _receivePercent = FormatPercent(0);
+
     /// <summary>
-    /// When set, a Wi-Fi adapter's axis runs from 0 to 1.25 × the faster of its maximum send and receive
-    /// speeds rather than autoscaling to the visible history.
+    /// When set, a Wi-Fi adapter's axis runs from 0 to the next multiple of 5 Mbps above its maximum
+    /// receive speed rather than autoscaling to the visible history.
     /// </summary>
     public bool FixedWifiAxis
     {
@@ -102,17 +110,21 @@ public sealed partial class NetworkVm : FocusItemVm
         Set(LiveStats, "Max receive", Format.BitRate(PeakReceive));
         Set(LiveStats, "Max send", Format.BitRate(PeakSend));
         if (s.Wlan is { AccessDenied: false } w) Set(LiveStats, "Signal strength", $"{w.SignalQuality}%");
+        ReceivePercent = FormatPercent(PeakReceive > 0 ? 100 * s.ReceiveBitsPerSec / PeakReceive : 0);
 
         if (++_ticks % AddressRefreshTicks == 0) _ = RefreshAddressesAsync();
         else if (wlanChanged) ShowStatic();
     }
 
+    private static string FormatPercent(double percent) => $"{Math.Clamp(percent, 0, 100):0.0}%";
+
     private void UpdateScale()
     {
         if (_fixedWifiAxis && _last?.TypeLabel == "Wi-Fi")
         {
-            double peak = Math.Max(PeakSend, PeakReceive);
-            TileMaximum = 1.25 * (peak > 0 ? peak : DefaultFixedPeak);
+            TileMaximum = PeakReceive > 0
+                ? (Math.Floor(PeakReceive / FixedAxisStep) + 1) * FixedAxisStep
+                : DefaultFixedPeak;
         }
         else
         {
