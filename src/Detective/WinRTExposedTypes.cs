@@ -25,6 +25,11 @@ public sealed class StatCollection : ObservableCollection<Stat>;
 [WinRTExposedType(typeof(BindableCollectionDetails))]
 public sealed class NameCollection : ObservableCollection<string>;
 
+/// <summary>The Processes page's visible rows.</summary>
+[WinRTRuntimeClassName("Microsoft.UI.Xaml.Interop.IBindableVector")]
+[WinRTExposedType(typeof(BindableCollectionDetails))]
+public sealed class ProcessRowCollection : ObservableCollection<ProcessRowVm>;
+
 /// <summary>
 /// WinRT view of an ObservableCollection: IBindableVector (via IList), IBindableIterable (via IEnumerable),
 /// INotifyCollectionChanged and INotifyPropertyChanged.

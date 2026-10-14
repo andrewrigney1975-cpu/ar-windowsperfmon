@@ -51,6 +51,8 @@ internal static class SnapshotMode
 
         var shots = new List<(string Name, Func<bool> Select)>
         {
+            // Per-process sampling starts when the page opens and needs a baseline tick, hence the longer wait.
+            ("0-processes", () => { shell.ProcessesShown = true; return true; }),
             ("1-cpu", () => { shell.SelectKind(FocusKind.Cpu); setCpuLogical(false); return true; }),
             ("2-cpu-logical", () => { setCpuLogical(true); return true; }),
             ("3-memory", () => { setCpuLogical(false); shell.SelectKind(FocusKind.Memory); return true; }),
@@ -62,7 +64,7 @@ internal static class SnapshotMode
         foreach (var (name, select) in shots)
         {
             if (!select()) continue;
-            await Task.Delay(1500);
+            await Task.Delay(name == "0-processes" ? 4000 : 1500);
             await RenderAsync(root, Path.Combine(Directory!, name + ".png"));
         }
         window.Close();

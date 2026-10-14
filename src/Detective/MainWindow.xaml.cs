@@ -1,3 +1,5 @@
+using System.ComponentModel;
+using System.Diagnostics;
 using Detective.Core;
 using Detective.ViewModels;
 using Detective.Views;
@@ -24,6 +26,7 @@ public sealed partial class MainWindow : Window
     private readonly DiskView _diskView = new();
     private readonly NetworkView _networkView = new();
     private readonly GpuView _gpuView = new();
+    private readonly ProcessesView _processesView;
 
     public MainWindow()
     {
@@ -54,9 +57,11 @@ public sealed partial class MainWindow : Window
 
         _cpuView = new CpuView(Shell.Cpu);
         _memoryView = new MemoryView(Shell.Memory);
+        _processesView = new ProcessesView(Shell.Processes);
+        _processesView.RunAsAdminRequested += (_, _) => RestartAsAdmin();
         Shell.PropertyChanged += (_, e) =>
         {
-            if (e.PropertyName == nameof(ShellVm.Selected)) ShowSelected();
+            if (e.PropertyName is nameof(ShellVm.Selected) or nameof(ShellVm.ProcessesShown)) ShowSelected();
         };
         ShowSelected();
 
@@ -66,7 +71,7 @@ public sealed partial class MainWindow : Window
         ApplyTheme();
         ChartWindow.Current.SetInterval(_settings.Interval);
 
-        _sampler = new Sampler(_settings.Interval) { Paused = _settings.Paused };
+        _sampler = new Sampler(_settings.Interval) { Paused = _settings.Paused, CollectProcesses = Shell.ProcessesShown };
         var dispatcher = DispatcherQueue;
         _sampler.Sampled += snapshot => dispatcher.TryEnqueue(() => OnSnapshot(snapshot));
         _sampler.Start();
@@ -94,6 +99,15 @@ public sealed partial class MainWindow : Window
 
     private void ShowSelected()
     {
+        // Per-process sampling costs a little CPU, so it only runs while the page is open.
+        if (_sampler is not null) _sampler.CollectProcesses = Shell.ProcessesShown;
+        if (Shell.ProcessesShown)
+        {
+            FocusHost.Content = _processesView;
+            Nav.SelectedItem = ProcessesNavItem;
+            return;
+        }
+
         var item = Shell.Selected;
         FocusHost.Content = item switch
         {
@@ -125,6 +139,11 @@ public sealed partial class MainWindow : Window
             FlyoutBase.ShowAttachedFlyout(SettingsNavItem);
             return;
         }
+        if (args.InvokedItemContainer == ProcessesNavItem)
+        {
+            Shell.ProcessesShown = true;
+            return;
+        }
         if (args.InvokedItemContainer?.Tag is string tag && Enum.TryParse<FocusKind>(tag, out var kind))
         {
             Shell.SelectKind(kind);
@@ -137,7 +156,22 @@ public sealed partial class MainWindow : Window
     {
         // The item is bound to Tag explicitly: DataContext isn't populated for x:Bind templates here.
         if (sender is FrameworkElement { Tag: FocusItemVm item })
-            Shell.Selected = item;
+            Shell.Select(item);
+    }
+
+    /// <summary>Starts an elevated copy (UAC prompt) and closes this one; cancelling the prompt keeps this one.</summary>
+    private void RestartAsAdmin()
+    {
+        _settings.Save();
+        try
+        {
+            Process.Start(new ProcessStartInfo(Environment.ProcessPath!) { UseShellExecute = true, Verb = "runas" });
+        }
+        catch (Win32Exception)
+        {
+            return;
+        }
+        Close();
     }
 
     /// <summary>

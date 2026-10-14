@@ -29,6 +29,14 @@ public sealed class AppSettings
     /// <summary>GPU engine picked in each of the four charts, keyed by the GPU's persist key.</summary>
     public Dictionary<string, string[]> GpuEngines { get; set; } = new();
 
+    /// <summary>Processes page sort column (a ProcessColumn name) and direction.</summary>
+    public string ProcessSort { get; set; } = "Cpu";
+
+    public bool ProcessSortDescending { get; set; } = true;
+
+    /// <summary>Processes page column widths in DIPs, keyed by ProcessColumn name (Name fills the rest).</summary>
+    public Dictionary<string, double> ProcessColumnWidths { get; set; } = new();
+
     public int Width { get; set; } = 1280;
 
     public int Height { get; set; } = 900;

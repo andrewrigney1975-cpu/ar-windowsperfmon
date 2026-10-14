@@ -6,6 +6,7 @@ A native Windows performance monitor, modelled on the **Performance** page of th
 
 ## Features
 
+- **Processes**: every process with PID, CPU, memory (private working set), disk, network and GPU use, sortable on any column. Grouped into **Apps** and **Background processes**, each shown as a parent/child tree; a collapsed row shows its whole tree's totals. Search by name or PID. **End task** or **End process tree** from the toolbar, the right-click menu, or Delete / Shift+Delete. Network use per process needs administrator rights ("Show network use" restarts Detective elevated).
 - **CPU**: overall utilization or a per-logical-processor grid; speed, processes, threads, handles, up time; cores, sockets, L1/L2/L3 cache, family/model/stepping, virtualization.
 - **Memory**: usage chart and a composition bar (in use, modified, standby, free); committed, cached, paged and non-paged pool; each installed module with slot, capacity, maker, part number, speed and voltage.
 - **Disks**: one item per physical disk, with its volumes rolled up; active time, read and write rates, response time; model, interface (NVMe/SATA/USB), SSD or HDD, capacity, and every volume's file system and free space.

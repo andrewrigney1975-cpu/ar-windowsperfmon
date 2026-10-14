@@ -42,6 +42,13 @@ public sealed class GpuMonitor : IDisposable
     private readonly List<PdhItem> _items = new();
     private readonly List<(GpuAdapter Adapter, uint Kmt)> _adapters;
     private readonly HashSet<int> _noTemperature = new();
+    private readonly Dictionary<(int Pid, string Luid, int Phys, int Eng), double> _perProcessEngine = new();
+
+    /// <summary>
+    /// Per-process GPU use from the latest sample: the busiest engine the process uses on any adapter
+    /// (Task Manager's rule for its Processes page).
+    /// </summary>
+    public Dictionary<int, double> ProcessUtilization { get; private set; } = new();
 
     public GpuMonitor()
     {
@@ -54,11 +61,16 @@ public sealed class GpuMonitor : IDisposable
 
     public IReadOnlyList<GpuSample> Sample()
     {
-        if (_adapters.Count == 0) return [];
+        if (_adapters.Count == 0)
+        {
+            ProcessUtilization = new();
+            return [];
+        }
         _query.Collect();
 
         // Sum per physical engine across processes, then take the busiest engine of each type (Task Manager's rule).
         var perEngine = new Dictionary<(string Luid, int Phys, int Eng), (string Type, double Sum)>();
+        _perProcessEngine.Clear();
         _items.Clear();
         _engine?.ReadArray(_items);
         foreach (var item in _items)
@@ -66,7 +78,17 @@ public sealed class GpuMonitor : IDisposable
             if (!GpuInstanceName.TryParseEngine(item.Instance, out var luid, out int phys, out int eng, out var type)) continue;
             var key = (luid, phys, eng);
             perEngine[key] = perEngine.TryGetValue(key, out var e) ? (e.Type, e.Sum + item.Value) : (type, item.Value);
+            if (GpuInstanceName.TryParsePid(item.Instance, out int pid))
+            {
+                var pkey = (pid, luid, phys, eng);
+                _perProcessEngine[pkey] = _perProcessEngine.GetValueOrDefault(pkey) + item.Value;
+            }
         }
+
+        var perProcess = new Dictionary<int, double>();
+        foreach (var ((pid, _, _, _), value) in _perProcessEngine)
+            perProcess[pid] = Math.Max(perProcess.GetValueOrDefault(pid), Math.Clamp(value, 0, 100));
+        ProcessUtilization = perProcess;
 
         var dedicated = ReadMemory(_dedicated);
         var shared = ReadMemory(_shared);
@@ -148,6 +170,14 @@ public static partial class GpuInstanceName
         return true;
     }
 
+    /// <summary>The owning process of an engine instance ("pid_1234_luid_...").</summary>
+    public static bool TryParsePid(string instance, out int pid)
+    {
+        var m = PidRegex().Match(instance);
+        pid = m.Success ? int.Parse(m.Groups[1].Value, CultureInfo.InvariantCulture) : 0;
+        return m.Success;
+    }
+
     /// <summary>Parses "luid_0x00000000_0x0000D1E3_phys_0".</summary>
     public static bool TryParseAdapter(string instance, out string luid)
     {
@@ -166,6 +196,9 @@ public static partial class GpuInstanceName
 
     [GeneratedRegex(@"luid_(0x[0-9A-Fa-f]+_0x[0-9A-Fa-f]+)_phys_(\d+)_eng_(\d+)_engtype_(.*)$")]
     private static partial Regex EngineRegex();
+
+    [GeneratedRegex(@"^pid_(\d+)_")]
+    private static partial Regex PidRegex();
 
     [GeneratedRegex(@"luid_(0x[0-9A-Fa-f]+_0x[0-9A-Fa-f]+)_phys_\d+")]
     private static partial Regex AdapterRegex();

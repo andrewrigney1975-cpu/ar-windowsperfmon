@@ -7,7 +7,8 @@ public sealed record Snapshot(
     MemorySample? Memory,
     IReadOnlyList<DiskSample> Disks,
     IReadOnlyList<NetworkSample> Networks,
-    IReadOnlyList<GpuSample> Gpus);
+    IReadOnlyList<GpuSample> Gpus,
+    ProcessList? Processes);
 
 /// <summary>
 /// Collects every monitor on a background loop at one shared interval and raises <see cref="Sampled"/>
@@ -29,6 +30,9 @@ public sealed class Sampler : IDisposable
 
     public bool Paused { get; set; }
 
+    /// <summary>Per-process sampling runs only while the Processes page is shown.</summary>
+    public bool CollectProcesses { get; set; }
+
     public TimeSpan Interval
     {
         get => _interval;
@@ -49,18 +53,26 @@ public sealed class Sampler : IDisposable
         using var disk = Create(() => new DiskMonitor());
         using var network = Create(() => new NetworkMonitor());
         using var gpu = Create(() => new GpuMonitor());
+        // Created on first use: it may start an ETW session, which isn't wanted unless processes are viewed.
+        ProcessMonitor? processes = null;
 
         using var timer = new PeriodicTimer(_interval);
         _timer = timer;
 
         // Rate counters need a baseline, so the first real sample is one interval after start.
-        Collect(cpu, memory, disk, network, gpu);
+        Collect(cpu, memory, disk, network, gpu, null);
         try
         {
             while (await timer.WaitForNextTickAsync(ct))
             {
                 if (Paused) continue;
-                var snapshot = Collect(cpu, memory, disk, network, gpu);
+                if (CollectProcesses && processes is null)
+                {
+                    processes = Create(() => new ProcessMonitor());
+                    // Baseline for the rate counters; the first values arrive on the next tick.
+                    Try("Processes", () => processes?.Sample(null));
+                }
+                var snapshot = Collect(cpu, memory, disk, network, gpu, CollectProcesses ? processes : null);
                 Sampled?.Invoke(snapshot);
             }
         }
@@ -68,16 +80,21 @@ public sealed class Sampler : IDisposable
         finally
         {
             _timer = null;
+            processes?.Dispose();
         }
     }
 
-    private Snapshot Collect(CpuMonitor? cpu, MemoryMonitor? memory, DiskMonitor? disk, NetworkMonitor? network, GpuMonitor? gpu) =>
-        new(
+    private Snapshot Collect(CpuMonitor? cpu, MemoryMonitor? memory, DiskMonitor? disk, NetworkMonitor? network, GpuMonitor? gpu, ProcessMonitor? processes)
+    {
+        var gpus = Try("GPU", () => gpu?.Sample()) ?? [];
+        return new(
             Try("CPU", () => cpu?.Sample()),
             Try("Memory", () => memory?.Sample()),
             Try("Disk", () => disk?.Sample()) ?? [],
             Try("Network", () => network?.Sample()) ?? [],
-            Try("GPU", () => gpu?.Sample()) ?? []);
+            gpus,
+            Try("Processes", () => processes?.Sample(gpu?.ProcessUtilization)));
+    }
 
     private readonly HashSet<string> _reported = new();
 

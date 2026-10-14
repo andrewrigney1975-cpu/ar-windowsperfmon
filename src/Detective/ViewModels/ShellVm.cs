@@ -23,6 +23,7 @@ public sealed partial class ShellVm : ObservableObject
     public ShellVm(AppSettings settings)
     {
         _settings = settings;
+        Processes = new ProcessesVm(settings);
         Items.Add(Cpu);
         Items.Add(Memory);
         _ = Cpu.LoadStaticAsync();
@@ -57,6 +58,21 @@ public sealed partial class ShellVm : ObservableObject
 
     public FocusItemCollection Items { get; } = new();
 
+    public ProcessesVm Processes { get; }
+
+    /// <summary>
+    /// The Processes page is showing instead of a focus item. <see cref="Selected"/> keeps the last item so
+    /// returning to the performance views lands where the user left off; its tile just isn't highlighted.
+    /// </summary>
+    [ObservableProperty]
+    private bool _processesShown;
+
+    partial void OnProcessesShownChanged(bool value)
+    {
+        if (Selected is { } s) s.IsSelected = !value;
+        SaveFocus();
+    }
+
     [ObservableProperty]
     private FocusItemVm? _selected;
 
@@ -65,9 +81,14 @@ public sealed partial class ShellVm : ObservableObject
         if (oldValue is not null) oldValue.IsSelected = false;
         if (newValue is not null)
         {
-            newValue.IsSelected = true;
+            newValue.IsSelected = !ProcessesShown;
             _lastByKind[newValue.Kind] = newValue;
         }
+        SaveFocus();
+    }
+
+    private void SaveFocus()
+    {
         if (_focusRestored && SavedSelection != _settings.LastFocus)
         {
             _settings.LastFocus = SavedSelection;
@@ -75,9 +96,17 @@ public sealed partial class ShellVm : ObservableObject
         }
     }
 
+    /// <summary>A summary tile was clicked: show that item (leaving the Processes page if it was open).</summary>
+    public void Select(FocusItemVm item)
+    {
+        ProcessesShown = false;
+        Selected = item;
+    }
+
     /// <summary>Rail click: the most recently viewed item of that kind, else the first one.</summary>
     public void SelectKind(FocusKind kind)
     {
+        ProcessesShown = false;
         if (_lastByKind.TryGetValue(kind, out var last) && Items.Contains(last))
             Selected = last;
         else if (Items.FirstOrDefault(i => i.Kind == kind) is { } first)
@@ -88,7 +117,9 @@ public sealed partial class ShellVm : ObservableObject
     private void RestoreFocus()
     {
         var saved = _settings.LastFocus;
-        if (saved is not null)
+        if (saved == ProcessesFocus)
+            ProcessesShown = true;
+        else if (saved is not null)
         {
             var match = Items.FirstOrDefault(i => $"{i.Kind}:{i.PersistKey}" == saved);
             if (match is null && Enum.TryParse<FocusKind>(saved.Split(':')[0], out var kind))
@@ -98,7 +129,9 @@ public sealed partial class ShellVm : ObservableObject
         _focusRestored = true;
     }
 
-    public string? SavedSelection => Selected is { } s ? $"{s.Kind}:{s.PersistKey}" : null;
+    private const string ProcessesFocus = "Processes";
+
+    public string? SavedSelection => ProcessesShown ? ProcessesFocus : Selected is { } s ? $"{s.Kind}:{s.PersistKey}" : null;
 
     public void Apply(Snapshot snapshot)
     {
@@ -110,6 +143,7 @@ public sealed partial class ShellVm : ObservableObject
         Reconcile(FocusKind.Network, snapshot.Networks, n => n.Id, CreateNetwork, (vm, n) => vm.Apply(n));
         SavePeaksIfDue();
         Reconcile(FocusKind.Gpu, snapshot.Gpus, g => g.Adapter.LuidKey, CreateGpu, (vm, g) => vm.Apply(g));
+        if (snapshot.Processes is { } processes) Processes.Apply(processes, snapshot.Gpus, snapshot.Cpu);
 
         if (!_focusRestored) RestoreFocus();
         ChartClock.Advance();

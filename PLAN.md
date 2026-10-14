@@ -17,7 +17,7 @@ A native WinUI 3 performance monitor for CPU, memory, disks, networks and GPUs. 
 - Detective's own footprint stays under ~1% CPU and ~80 MB RAM at a 1 s refresh. *Measured:* 0.06% of total CPU (1.4% of one core). Memory is 210 MB working set / 152 MB private in a Debug build, so the RAM target is **not met**. That is mostly the self-contained WinUI/.NET baseline.
 
 **Non-goals (v1)**
-- The Processes, Services, Startup and Users tabs.
+- The Services, Startup and Users tabs. (The Processes page was added later; see §13.)
 - Historical logging or export (possible v2).
 - Reading RAM timings from SPD. This needs SMBus access through a ring-0 driver. See §9.
 
@@ -336,3 +336,50 @@ Estimated total: **about 11 working days** for one developer.
 - **Fake providers:** not built yet. The plan was `Fake*Provider` implementations behind the same interfaces, with a `--fake` switch.
 - **Parity checks:** run side by side with Task Manager for each milestone's "done when" criteria.
 - **Manual matrix:** light and dark theme, 100/150/200% DPI, a small window (the strip hits its 300 px cap versus the 30% rule), hot-plugging USB and Wi-Fi, and an iGPU+dGPU laptop if available.
+
+---
+
+## 13. Processes page (added 2026-10-14)
+
+A **Processes** item at the top of the rail shows a process table in the focus area. The summary strip stays below it, and the table scrolls on its own.
+
+**Data (`Detective.Core/Processes.cs`).**
+- **One read for every process:** a single `NtQuerySystemInformation(SystemProcessInformation)` call (`Native/Ntdll.cs`). It works as a standard user for every process, so there are no access-denied gaps. Processes are keyed by **(PID, creation time)**, so a reused PID is never mistaken for the old process.
+- **CPU:** Δ(kernel + user time) ÷ (Δt × logical processors). The values are then scaled so their total matches the CPU page's "% Processor Utility", as Task Manager does.
+- **Memory:** private working set. This is the same figure as Task Manager's Memory column.
+- **Disk:** Δ(read + write transfer bytes) per second. This counts all file I/O, so some network and device I/O is included. The column's tooltip says so (decision 2026-10-14).
+- **GPU:** the `GPU Engine` counter's `pid_N` instances, already read by `GpuMonitor`. Each process gets its busiest engine.
+- **Network:** a real-time ETW session on Microsoft-Windows-Kernel-Network (`Native/Etw.cs`, raw P/Invoke because TraceEvent isn't AOT-safe). It counts TCP/UDP send and receive bytes per PID. ETW needs admin, so without it the column shows "—" and a **Show network use** link restarts Detective elevated (decision 2026-10-14).
+- **When it runs:** `Sampler.CollectProcesses` turns per-process sampling on only while the page is visible. The ETW session starts the first time the page opens.
+- **Elevated runs:** SeDebugPrivilege is enabled, as in Task Manager.
+
+**Grouping (decision 2026-10-14: Apps / Background, parent/child tree).**
+- **Apps:** a process with a visible, titled, unowned, uncloaked, non-tool top-level window. Desktop and taskbar windows don't count. Its windowless descendants nest beneath it, and a descendant with its own window becomes an app of its own.
+- **Background:** everything else, as a parent/child tree.
+- **Parent links:** a link counts only when the parent started before the child.
+- **Collapsed rows:** a collapsed row shows its whole tree's totals and a count, as Task Manager's grouped rows do. An expanded row shows its own values.
+- **Sorting:** siblings sort at every level, with a name/PID tie-break so the order is stable.
+- **Search:** opens the ancestors of each match and keeps each match's own tree.
+
+**Ending processes.**
+- **Identity:** `OpenProcess` + `GetProcessTimes` confirm the creation time first, so a recycled PID is never hit.
+- **Refused:** PID 0, PID 4, Detective itself, and processes where `IsProcessCritical` is true (ending one bugchecks Windows).
+- **Process tree:** read fresh at the moment of ending. The root goes first, then the leaves upwards, then one more pass for children started during the kill.
+- **Confirmation:** always confirmed, and the dialog says how many processes the tree holds.
+- **Failures:** reported in an InfoBar (access denied, protected, already exited).
+
+**UI (`Views/ProcessesView`, `ViewModels/ProcessesVm`).**
+- **Table:** a `ListView` with a matching header grid. The header shows each column's total over its name. Click a header to sort; the direction is persisted.
+- **Columns:** drag a column's left edge to resize it (`ColumnSplitter`); widths are persisted.
+- **Rows:** reconciled in place with `Move`, so the list doesn't flash each tick, and the selection is restored after reordering.
+- **Heat map:** cells are tinted with the resource's accent colour in proportion to use.
+- **Keyboard:** Left/Right collapse and expand, Delete ends the task, Shift+Delete ends the tree, and the menu key opens the row menu.
+
+**Verified.**
+- **Unit tests:** CPU maths, PID-reuse parent rules, app grouping, kill order and the GPU PID parser.
+- **Live test:** reads this process and checks the struct layout against `System.Diagnostics.Process`.
+- **Snapshot mode:** `0-processes.png`, light and dark.
+- **UI Automation, Debug and AOT builds:** search by PID, select the row, *End process tree* on a `cmd → cmd → ping` tree (all four processes ended, Detective kept running), sort by PID both ways and by memory, and collapse a group.
+- **Not yet verified at runtime:** the ETW network column, because it needs an elevated run.
+
+**Not done.** Process icons; the "Windows processes" third group; a Details-style flat view.

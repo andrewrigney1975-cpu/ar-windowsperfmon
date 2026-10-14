@@ -37,6 +37,11 @@
             OpenPaneLength="200"
             ItemInvoked="Nav_ItemInvoked">
             <NavigationView.MenuItems>
+                <NavigationViewItem x:Name="ProcessesNavItem" Content="Processes" Tag="Processes" ToolTipService.ToolTip="Processes">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xECA5;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
                 <NavigationViewItem Content="CPU" Tag="Cpu" ToolTipService.ToolTip="CPU">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xE950;" />

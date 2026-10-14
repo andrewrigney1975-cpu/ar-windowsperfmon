@@ -222,3 +222,94 @@ public class SustainedLoadTests
         Assert.Equal(LoadLevel.High, SustainedLoad.Level(History(90, 90, 90, 90, 90), 5));
     }
 }
+
+public class ProcessTests
+{
+    private static ProcessSample P(int pid, long created, int parent, bool window = false, double cpu = 0) =>
+        new(new ProcessKey(pid, created), parent, $"p{pid}.exe", null, null, cpu, 0, 0, null, 0, window);
+
+    [Theory]
+    [InlineData(10_000_000, 1.0, 1, 100)]   // one full core-second on one core
+    [InlineData(10_000_000, 1.0, 4, 25)]
+    [InlineData(5_000_000, 0.5, 2, 50)]
+    [InlineData(0, 1.0, 4, 0)]
+    [InlineData(-5, 1.0, 4, 0)]
+    [InlineData(10_000_000, 0, 4, 0)]
+    public void CpuPercentIsShareOfAllProcessors(long delta, double seconds, int processors, double expected) =>
+        Assert.Equal(expected, ProcessMonitor.CpuPercent(delta, seconds, processors), 6);
+
+    [Fact]
+    public void ReusedParentPidIsNotAParent()
+    {
+        // Process 10 started after 20, so it can't be 20's parent: 20's real parent exited and 10 reused the PID.
+        var (_, background) = ProcessTree.Group([P(10, 500, 1), P(20, 100, 10)]);
+        Assert.Equal(2, background.Count);
+        Assert.All(background, n => Assert.Empty(n.Children));
+    }
+
+    [Fact]
+    public void AppsHoldTheirWindowlessDescendantsAndWindowedChildrenSplitOff()
+    {
+        var samples = new[]
+        {
+            P(1, 1, 0),                    // background root
+            P(2, 2, 1, window: true),      // app
+            P(3, 3, 2),                    // helper of app 2
+            P(4, 4, 3),                    // grandchild of app 2
+            P(5, 5, 2, window: true),      // window started by app 2: its own app
+            P(6, 6, 5),                    // helper of app 5
+            P(7, 7, 1),                    // background child
+        };
+        var (apps, background) = ProcessTree.Group(samples);
+
+        Assert.Equal([2, 5], apps.Select(a => a.Sample.Pid).Order());
+        var app2 = apps.Single(a => a.Sample.Pid == 2);
+        Assert.Equal(3, Assert.Single(app2.Children).Sample.Pid);
+        Assert.Equal(4, Assert.Single(app2.Children[0].Children).Sample.Pid);
+        Assert.Equal(6, Assert.Single(apps.Single(a => a.Sample.Pid == 5).Children).Sample.Pid);
+
+        var root = Assert.Single(background);
+        Assert.Equal(1, root.Sample.Pid);
+        Assert.Equal(7, Assert.Single(root.Children).Sample.Pid);
+    }
+
+    [Fact]
+    public void TreeOfEndsRootFirstThenLeavesUpwards()
+    {
+        var entries = new List<ProcessEntry>
+        {
+            new(1, 0, 1, "root", 1, 0, 0, 0, 0),
+            new(2, 1, 2, "child", 1, 0, 0, 0, 0),
+            new(3, 2, 3, "grandchild", 1, 0, 0, 0, 0),
+            new(4, 1, 0, "reused pid, older than root", 1, 0, 0, 0, 0),
+        };
+        var order = ProcessTree.TreeOf(entries, new ProcessKey(1, 1)).Select(k => k.Pid);
+        Assert.Equal([1, 3, 2], order);
+    }
+
+    [Fact]
+    public void GpuEnginePid()
+    {
+        Assert.True(GpuInstanceName.TryParsePid("pid_1234_luid_0x00000000_0x0000D1E3_phys_0_eng_3_engtype_3D", out int pid));
+        Assert.Equal(1234, pid);
+        Assert.False(GpuInstanceName.TryParsePid("luid_0x00000000_0x0000D1E3_phys_0", out _));
+    }
+
+    [Fact]
+    public void LiveSampleReadsThisProcess()
+    {
+        using var monitor = new ProcessMonitor();
+        monitor.Sample(null);
+        Thread.Sleep(200);
+        var list = monitor.Sample(null);
+
+        using var self = System.Diagnostics.Process.GetCurrentProcess();
+        var me = Assert.Single(list.Items, p => p.Pid == Environment.ProcessId);
+        Assert.Equal(self.StartTime.ToFileTime(), me.Key.CreateTime);
+        Assert.Equal(self.ProcessName + ".exe", me.Name, ignoreCase: true);
+        Assert.InRange(me.Memory, 1UL << 20, (ulong)self.WorkingSet64);
+        Assert.NotNull(me.Path);
+        Assert.Contains(list.Items, p => p.Pid == me.ParentPid);
+        Assert.True(list.TotalPhysicalMemory > 0);
+    }
+}
