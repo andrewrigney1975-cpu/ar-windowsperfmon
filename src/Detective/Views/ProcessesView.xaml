@@ -182,6 +182,10 @@
             AutomationProperties.Name="Processes"
             BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
             BorderThickness="0,1,0,0">
+            <!-- No add/remove/reorder animations: rows update in place and shouldn't flash. -->
+            <ListView.ItemContainerTransitions>
+                <TransitionCollection />
+            </ListView.ItemContainerTransitions>
             <ListView.KeyboardAccelerators>
                 <KeyboardAccelerator Key="Delete" Invoked="EndTask_Invoked" />
                 <KeyboardAccelerator Key="Delete" Modifiers="Shift" Invoked="EndTree_Invoked" />

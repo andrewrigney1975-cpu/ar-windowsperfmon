@@ -125,6 +125,12 @@ public sealed partial class ProcessesVm : ObservableObject
     private readonly HashSet<ProcessKey> _expanded = new();
     private readonly HashSet<string> _collapsedGroups = new();
     private readonly Dictionary<ProcessKey, ProcessRowVm> _rows = new();
+
+    /// <summary>
+    /// Each visible process's position after the last rebuild. Rows keep these positions between ticks so the
+    /// list stays still while values change; only a click on a column header re-sorts everything.
+    /// </summary>
+    private Dictionary<ProcessKey, int> _rank = new();
     private readonly ProcessRowVm _appsHeading = ProcessRowVm.ForGroup("Apps");
     private readonly ProcessRowVm _backgroundHeading = ProcessRowVm.ForGroup("Background processes");
     private ProcessList? _last;
@@ -180,6 +186,7 @@ public sealed partial class ProcessesVm : ObservableObject
         _settings.ProcessSort = SortColumn.ToString();
         _settings.ProcessSortDescending = SortDescending;
         _settings.Save();
+        _rank.Clear();
         Rebuild();
     }
 
@@ -271,6 +278,9 @@ public sealed partial class ProcessesVm : ObservableObject
         GpuTotal = Format.Percent(_gpuBusiest);
 
         Reconcile(target);
+        _rank = new Dictionary<ProcessKey, int>(target.Count);
+        for (int i = 0; i < target.Count; i++)
+            if (!target[i].IsGroup) _rank[target[i].Key] = i;
         var live = samples.Select(s => s.Key).ToHashSet();
         foreach (var gone in _rows.Keys.Where(k => !live.Contains(k)).ToList()) _rows.Remove(gone);
         _expanded.IntersectWith(live);
@@ -311,8 +321,32 @@ public sealed partial class ProcessesVm : ObservableObject
             bool expanded = children.Count > 0 && ((filter.Length > 0 && !matches) || _expanded.Contains(node.Sample.Key));
             items.Add(new Item(node.Sample, children, subtree, expanded));
         }
-        items.Sort(Compare);
+        Order(items);
         return items;
+    }
+
+    /// <summary>
+    /// Siblings that were already on screen keep their order. New ones (just started, or just revealed by
+    /// expanding a row) go where the current sort would put them. With no history yet, a plain sort.
+    /// </summary>
+    private void Order(List<Item> items)
+    {
+        if (_rank.Count == 0)
+        {
+            items.Sort(Compare);
+            return;
+        }
+        var ordered = items.Where(i => _rank.ContainsKey(i.Sample.Key)).OrderBy(i => _rank[i.Sample.Key]).ToList();
+        var fresh = items.Where(i => !_rank.ContainsKey(i.Sample.Key)).ToList();
+        fresh.Sort(Compare);
+        foreach (var item in fresh)
+        {
+            int at = ordered.FindIndex(o => Compare(item, o) < 0);
+            if (at < 0) ordered.Add(item);
+            else ordered.Insert(at, item);
+        }
+        items.Clear();
+        items.AddRange(ordered);
     }
 
     private static bool Matches(ProcessSample s, string filter) =>
