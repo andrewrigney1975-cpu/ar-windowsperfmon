@@ -380,6 +380,6 @@ A **Processes** item at the top of the rail shows a process table in the focus a
 - **Live test:** reads this process and checks the struct layout against `System.Diagnostics.Process`.
 - **Snapshot mode:** `0-processes.png`, light and dark.
 - **UI Automation, Debug and AOT builds:** search by PID, select the row, *End process tree* on a `cmd → cmd → ping` tree (all four processes ended, Detective kept running), sort by PID both ways and by memory, and collapse a group.
-- **Not yet verified at runtime:** the ETW network column, because it needs an elevated run.
+- **Elevated run (2026-10-14):** the ETW network column fills in and matches the Wi-Fi tile during a download. Loopback traffic (127.0.0.0/8, ::1, IPv4-mapped 127.x) is left out because it never reaches an adapter; counting it had put the column at 2.6 Mbps while the adapter showed about 15 Kbps.
 
 **Not done.** Process icons; the "Windows processes" third group; a Details-style flat view.

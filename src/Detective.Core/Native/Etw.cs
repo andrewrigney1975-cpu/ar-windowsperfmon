@@ -106,10 +106,17 @@ public sealed unsafe class NetworkTrace : IDisposable
         ushort id = *(ushort*)(record + 40);
         if (id is not (TcpSendV4 or TcpRecvV4 or TcpSendV6 or TcpRecvV6 or UdpSendV4 or UdpRecvV4 or UdpSendV6 or UdpRecvV6))
             return;
-        if (*(ushort*)(record + 86) < 8) return;
+        // Payload: UInt32 PID, UInt32 size, then destination and source addresses (4 bytes each for IPv4,
+        // 16 for IPv6).
+        bool v6 = id is TcpSendV6 or TcpRecvV6 or UdpSendV6 or UdpRecvV6;
+        int addressSize = v6 ? 16 : 4;
+        if (*(ushort*)(record + 86) < 8 + 2 * addressSize) return;
         byte* data = *(byte**)(record + 96);
         int pid = (int)*(uint*)data;
         uint size = *(uint*)(data + 4);
+        // Loopback traffic between local processes never reaches an adapter; counting it would put the column
+        // far above the Networks page.
+        if (IsLoopback(data + 8, v6) || IsLoopback(data + 8 + addressSize, v6)) return;
 
         var trace = _current;
         if (trace is null) return;
@@ -118,6 +125,16 @@ public sealed unsafe class NetworkTrace : IDisposable
             ref long total = ref CollectionsMarshal.GetValueRefOrAddDefault(trace._bytes, pid, out _);
             total += size;
         }
+    }
+
+    /// <summary>127.0.0.0/8, ::1, or IPv4-mapped 127.x (::ffff:127.x.x.x).</summary>
+    internal static bool IsLoopback(byte* address, bool v6)
+    {
+        if (!v6) return address[0] == 127;
+        for (int i = 0; i < 10; i++)
+            if (address[i] != 0) return false;
+        if (address[10] == 0xFF && address[11] == 0xFF) return address[12] == 127;
+        return address[10] == 0 && address[11] == 0 && address[12] == 0 && address[13] == 0 && address[14] == 0 && address[15] == 1;
     }
 
     private static void InitProperties(byte* props)

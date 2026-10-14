@@ -313,3 +313,23 @@ public class ProcessTests
         Assert.True(list.TotalPhysicalMemory > 0);
     }
 }
+
+public unsafe class EtwTests
+{
+    private static bool Loopback(bool v6, params byte[] address)
+    {
+        fixed (byte* p = address) return NetworkTrace.IsLoopback(p, v6);
+    }
+
+    [Fact]
+    public void LoopbackAddresses()
+    {
+        Assert.True(Loopback(false, 127, 0, 0, 1));
+        Assert.True(Loopback(false, 127, 1, 2, 3));
+        Assert.False(Loopback(false, 192, 168, 1, 10));
+        Assert.True(Loopback(true, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1));
+        Assert.True(Loopback(true, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xFF, 0xFF, 127, 0, 0, 1));
+        Assert.False(Loopback(true, 0x20, 0x01, 0x0d, 0xb8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1));
+        Assert.False(Loopback(true, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xFF, 0xFF, 192, 168, 1, 10));
+    }
+}
