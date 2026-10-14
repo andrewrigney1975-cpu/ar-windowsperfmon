@@ -32,6 +32,9 @@
        much smaller working set; trimming comes with it. -->
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <PublishAot>true</PublishAot>
+    <!-- Release always runs elevated on an admin account (one UAC prompt per launch); Debug stays asInvoker so
+         snapshot and UI Automation checks run without prompts. -->
+    <ApplicationManifest>app.release.manifest</ApplicationManifest>
     <OptimizationPreference>Size</OptimizationPreference>
     <UseSystemResourceKeys>true</UseSystemResourceKeys>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
